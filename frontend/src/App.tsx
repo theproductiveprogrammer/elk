@@ -1,11 +1,12 @@
 import "./App.css";
 import Sidebar from "./Sidebar";
+import Viewer from "./Viewer";
 
 function App() {
 	return (
 		<div className="flex flex-row">
 			<Sidebar />
-			<div className="w-3/4 bg-white h-svh overflow-scroll"></div>
+			<Viewer />
 		</div>
 	);
 }
