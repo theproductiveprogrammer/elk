@@ -1,6 +1,7 @@
 import { FormEvent, useState } from "react";
 import { SaveFTPConfig } from "../wailsjs/go/main/App";
 import useViewStore from "./stores/viewStore";
+import clsx from "clsx";
 
 export default function FTPEditPage() {
 	const { showStartPage, editingFTP } = useViewStore();
@@ -125,7 +126,10 @@ export default function FTPEditPage() {
 				</div>
 
 				<div
-					className="text-red-500 text-xs mt-8 text-right cursor-pointer hover:underline"
+					className={clsx(
+						"text-red-500 text-xs mt-8 text-right cursor-pointer hover:underline",
+						editingFTP || "hidden"
+					)}
 					onClick={deleteCurr}
 				>
 					DELETE
