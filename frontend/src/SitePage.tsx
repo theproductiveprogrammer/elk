@@ -3,7 +3,7 @@ import useViewStore from "./stores/viewStore";
 export default function SitePage() {
 	const { currSite, showFTPEditPage } = useViewStore();
 
-	if (!currSite) return "UNEXPECTED ERROR: 10101";
+	if (!currSite) return <div>UNEXPECTED ERROR: 10101</div>
 
 	return (
 		<div className="w-3/4 border-b border-elk-green h-9 leading-9 text-center relative">
