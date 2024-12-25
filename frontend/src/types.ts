@@ -14,3 +14,12 @@ export type SiteInfo = {
 	ftpConfig: FTPConfig;
 	logs: FTPEntry[];
 };
+
+export function emptyFTPConfig() {
+	return {
+		name: "",
+		ip: "",
+		user: "",
+		password: "",
+	}
+}

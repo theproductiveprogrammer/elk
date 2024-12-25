@@ -1,13 +1,19 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { SaveFTPConfig } from "../wailsjs/go/main/App";
 import useViewStore from "./stores/viewStore";
 import clsx from "clsx";
+import {emptyFTPConfig, FTPConfig} from "./types";
 
 export default function FTPEditPage() {
-	const { showStartPage, editingFTP } = useViewStore();
+	const { showStartPage, currSite } = useViewStore();
 	const [disable, setDisable] = useState(false);
 	const [err, setErr_] = useState("");
 	const [timer, setTimer] = useState<number | null>(null);
+	const [editingFTP, setEditingFTP ] = useState<FTPConfig>(emptyFTPConfig());
+
+	useEffect(() => {
+		setEditingFTP(currSite ? {...currSite.ftpConfig} : emptyFTPConfig())
+	}, [currSite])
 
 	function setErr(err: string) {
 		setErr_(err);
@@ -24,41 +30,30 @@ export default function FTPEditPage() {
 		e.preventDefault();
 		setDisable(true);
 
-		const form = e.currentTarget;
-		const data = new FormData(form);
-		const name_v = data.get("name");
-		const ip_v = data.get("ip");
-		const user_v = data.get("user");
-		const password_v = data.get("password");
-
 		let err: string | null = null;
-		if (!name_v) err = `Missing Name`;
-		else if (!ip_v) err = `Missing ip`;
-		else if (!user_v) err = `Missing user`;
-		else if (!password_v) err = `Missing password`;
+		if (!editingFTP.name) err = `Missing Name`;
+		else if (!editingFTP.ip) err = `Missing ip`;
+		else if (!editingFTP.user) err = `Missing user`;
+		else if (!editingFTP.password) err = `Missing password`;
 		if (err) {
 			setErr(err);
 			setDisable(false);
 			return;
 		}
 
-		const name = (name_v as FormDataEntryValue).toString();
-		const ip = (ip_v as FormDataEntryValue).toString();
-		const user = (user_v as FormDataEntryValue).toString();
-		const password = (password_v as FormDataEntryValue).toString();
-
 		try {
-			const resp = await SaveFTPConfig({
-				name,
-				ip,
-				user,
-				password,
-			});
+			const resp = await SaveFTPConfig(editingFTP);
 			console.log(resp);
 		} catch (err: any) {
 			setErr(err.message || "Error: " + err);
 		}
 		setDisable(false);
+	}
+
+	function set(key : string, val: string) {
+		const updated :any = {...editingFTP}
+		updated[key] = val;
+		setEditingFTP(updated);
 	}
 
 	function deleteCurr() {
@@ -76,7 +71,8 @@ export default function FTPEditPage() {
 						type="text"
 						name="name"
 						placeholder="Name"
-						defaultValue={(editingFTP && editingFTP.name) || ""}
+						value={editingFTP.name}
+						onChange={e => set("name", e.target.value)}
 						className="border p-1 rounded"
 					/>
 				</div>
@@ -87,7 +83,8 @@ export default function FTPEditPage() {
 						type="text"
 						name="ip"
 						placeholder="211.211.211.211"
-						defaultValue={(editingFTP && editingFTP.ip) || ""}
+						value={editingFTP.ip}
+						onChange={e => set("ip", e.target.value)}
 						className="border p-1 rounded"
 					/>
 				</div>
@@ -97,7 +94,8 @@ export default function FTPEditPage() {
 					<input
 						type="text"
 						name="user"
-						defaultValue={(editingFTP && editingFTP.user) || ""}
+						value={editingFTP.user}
+						onChange={e => set("user", e.target.value)}
 						className="border p-1 rounded"
 					/>
 				</div>
@@ -107,7 +105,8 @@ export default function FTPEditPage() {
 					<input
 						type="password"
 						name="password"
-						defaultValue={(editingFTP && editingFTP.password) || ""}
+						value={editingFTP.password}
+						onChange={e => set("password", e.target.value)}
 						className="border p-1 rounded"
 					/>
 				</div>
