@@ -3,7 +3,7 @@ import { SaveFTPConfig } from "../wailsjs/go/main/App";
 import useViewStore from "./stores/viewStore";
 
 export default function FTPEditPage() {
-	const { showStartPage } = useViewStore();
+	const { showStartPage, editingFTP } = useViewStore();
 	const [disable, setDisable] = useState(false);
 	const [err, setErr_] = useState("");
 	const [timer, setTimer] = useState<number | null>(null);
@@ -75,6 +75,7 @@ export default function FTPEditPage() {
 						type="text"
 						name="name"
 						placeholder="Name"
+						defaultValue={(editingFTP && editingFTP.name) || ""}
 						className="border p-1 rounded"
 					/>
 				</div>
@@ -85,13 +86,19 @@ export default function FTPEditPage() {
 						type="text"
 						name="ip"
 						placeholder="211.211.211.211"
+						defaultValue={(editingFTP && editingFTP.ip) || ""}
 						className="border p-1 rounded"
 					/>
 				</div>
 
 				<div className="grid grid-cols-dialog items-center mb-2">
 					<label className="text-right pr-4">User</label>
-					<input type="text" name="user" className="border p-1 rounded" />
+					<input
+						type="text"
+						name="user"
+						defaultValue={(editingFTP && editingFTP.user) || ""}
+						className="border p-1 rounded"
+					/>
 				</div>
 
 				<div className="grid grid-cols-dialog items-center mb-2">
@@ -99,6 +106,7 @@ export default function FTPEditPage() {
 					<input
 						type="password"
 						name="password"
+						defaultValue={(editingFTP && editingFTP.password) || ""}
 						className="border p-1 rounded"
 					/>
 				</div>

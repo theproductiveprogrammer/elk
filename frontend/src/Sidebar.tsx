@@ -1,17 +1,11 @@
-import { DownloadLogs } from "../wailsjs/go/main/App";
 import logo from "./assets/images/elk-logo.svg";
 import logoText from "./assets/images/elk-text.svg";
 import useAppStore from "./stores/appStore";
 import useViewStore from "./stores/viewStore";
-import { SiteInfo } from "./types";
 
 export default function Sidebar() {
 	const { sites } = useAppStore();
-	const { showFTPEditPage } = useViewStore();
-
-	async function setCurrSite(site: SiteInfo) {
-		await DownloadLogs(site.ftpConfig);
-	}
+	const { showFTPEditPage, showSite } = useViewStore();
 
 	return (
 		<div className="w-1/4 h-svh overflow-scroll bg-elk-green">
@@ -30,7 +24,7 @@ export default function Sidebar() {
 					{sites.map((site) => (
 						<li
 							className="text-white/80 text-right mb-2 text-sm font-thin cursor-pointer"
-							onClick={() => setCurrSite(site)}
+							onClick={() => showSite(site)}
 						>
 							{site.name}
 						</li>
