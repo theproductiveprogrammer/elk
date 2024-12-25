@@ -1,4 +1,5 @@
 import { FormEvent, useState } from "react";
+import { SaveFTPConfig } from "../wailsjs/go/main/App";
 
 export default function FTPEditPage() {
 	const [disable, setDisable] = useState(false);
@@ -16,27 +17,45 @@ export default function FTPEditPage() {
 		);
 	}
 
-	function onSubmit(e: FormEvent<HTMLFormElement>) {
+	async function onSubmit(e: FormEvent<HTMLFormElement>) {
 		e.preventDefault();
 		setDisable(true);
 
 		const form = e.currentTarget;
 		const data = new FormData(form);
-		const name = data.get("name");
-		const ip = data.get("ip");
-		const user = data.get("user");
-		const password = data.get("password");
+		const name_v = data.get("name");
+		const ip_v = data.get("ip");
+		const user_v = data.get("user");
+		const password_v = data.get("password");
 
 		let err: string | null = null;
-		if (!name) err = `Missing Name`;
-		else if (!ip) err = `Missing ip`;
-		else if (!user) err = `Missing user`;
-		else if (!password) err = `Missing password`;
+		if (!name_v) err = `Missing Name`;
+		else if (!ip_v) err = `Missing ip`;
+		else if (!user_v) err = `Missing user`;
+		else if (!password_v) err = `Missing password`;
 		if (err) {
 			setErr(err);
 			setDisable(false);
 			return;
 		}
+
+		const name = (name_v as FormDataEntryValue).toString();
+		const ip = (ip_v as FormDataEntryValue).toString();
+		const user = (user_v as FormDataEntryValue).toString();
+		const password = (password_v as FormDataEntryValue).toString();
+
+		try {
+			const resp = await SaveFTPConfig({
+				name,
+				ip,
+				user,
+				password,
+			});
+			console.log(resp);
+		} catch (err: any) {
+			setErr(err.message || "Error: " + err);
+		}
+		setDisable(false);
 	}
 
 	return (
@@ -66,7 +85,7 @@ export default function FTPEditPage() {
 
 				<div className="grid grid-cols-dialog items-center mb-2">
 					<label className="text-right pr-4">User</label>
-					<input type="text" name="name" className="border p-1 rounded" />
+					<input type="text" name="user" className="border p-1 rounded" />
 				</div>
 
 				<div className="grid grid-cols-dialog items-center mb-2">
