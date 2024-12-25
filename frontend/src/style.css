@@ -6,4 +6,7 @@
 	.btn-primary {
 		@apply border rounded py-2 w-28 bg-elk-green/20 border-elk-green hover:bg-elk-green/30 hover:shadow disabled:bg-elk-green/10 disabled:text-gray-400 disabled:border-gray-100 disabled:cursor-wait;
 	}
+	.btn-secondary {
+		@apply border rounded py-2 w-28 border-elk-green hover:bg-elk-green/30 hover:shadow disabled:bg-elk-green/10 disabled:text-gray-400 disabled:border-gray-100 disabled:cursor-wait;
+	}
 }

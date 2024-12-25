@@ -1,7 +1,9 @@
 import { FormEvent, useState } from "react";
 import { SaveFTPConfig } from "../wailsjs/go/main/App";
+import useViewStore from "./stores/viewStore";
 
 export default function FTPEditPage() {
+	const { showStartPage } = useViewStore();
 	const [disable, setDisable] = useState(false);
 	const [err, setErr_] = useState("");
 	const [timer, setTimer] = useState<number | null>(null);
@@ -100,6 +102,13 @@ export default function FTPEditPage() {
 				<div className="mt-8 flex flex-row justify-around">
 					<button type="submit" disabled={disable} className="btn-primary">
 						Submit
+					</button>
+					<button
+						disabled={disable}
+						className="btn-secondary"
+						onClick={() => showStartPage()}
+					>
+						Cancel
 					</button>
 				</div>
 			</form>

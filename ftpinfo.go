@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 )
@@ -45,7 +46,7 @@ func (a *App) GetFTPConfig(name string) (*FTPConfig, error) {
 		return nil, fmt.Errorf("failed to get home directory: %w", err)
 	}
 
-	configPath := filepath.Join(homeDir, "myappdata", name, "ftpinfo.config")
+	configPath := filepath.Join(homeDir, "elkdata", name, "ftpinfo.config")
 	file, err := os.Open(configPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open config file: %w", err)
@@ -60,4 +61,41 @@ func (a *App) GetFTPConfig(name string) (*FTPConfig, error) {
 	}
 
 	return &config, nil
+}
+
+func (a *App) ListFTPConfigs() ([]string, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get home directory: %w", err)
+	}
+
+	appDataPath := filepath.Join(homeDir, "elkdata")
+	entries, err := ioutil.ReadDir(appDataPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read app data directory: %w", err)
+	}
+
+	var configNames []string
+	for _, entry := range entries {
+		if entry.IsDir() {
+			configNames = append(configNames, entry.Name())
+		}
+	}
+
+	return configNames, nil
+}
+
+func (a *App) DeleteFTPConfig(name string) error {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("failed to get home directory: %w", err)
+	}
+
+	configPath := filepath.Join(homeDir, "elkdata", name)
+	err = os.RemoveAll(configPath)
+	if err != nil {
+		return fmt.Errorf("failed to delete ftp directory: %w", err)
+	}
+
+	return nil
 }

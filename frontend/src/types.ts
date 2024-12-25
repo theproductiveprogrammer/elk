@@ -1,4 +1,5 @@
-export type FTPInfo = {
+export type FTPConfig = {
+	name: string;
 	ip: string;
 	user: string;
 	password: string;
@@ -10,6 +11,6 @@ export type FTPEntry = {
 };
 export type SiteInfo = {
 	name: string;
-	ftpInfo: FTPInfo;
+	ftpConfig: FTPConfig;
 	logs: FTPEntry[];
 };

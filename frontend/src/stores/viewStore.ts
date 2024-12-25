@@ -1,21 +1,27 @@
 import { create } from "zustand";
-import { FTPInfo } from "../types";
+import { FTPConfig } from "../types";
 
 type Page = "start" | "ftpedit";
 interface ViewData {
 	showing: Page;
-	editingFTP: FTPInfo | null;
+	startVideoLoaded: boolean;
+	editingFTP: FTPConfig | null;
 }
 interface ViewState extends ViewData {
-	showFTPEditPage: (ftpInfo: FTPInfo | null) => void;
+	showFTPEditPage: (ftpConfig: FTPConfig | null) => void;
+	showStartPage: () => void;
+	setStartVideoLoaded: () => void;
 }
 
 const useViewStore = create<ViewState>((set) => ({
 	showing: "start",
+	startVideoLoaded: false,
 	editingFTP: null,
-	showFTPEditPage: (ftpInfo: FTPInfo | null) => {
-		set({ editingFTP: ftpInfo, showing: "ftpedit" });
+	showFTPEditPage: (ftpConfig: FTPConfig | null) => {
+		set({ editingFTP: ftpConfig, showing: "ftpedit" });
 	},
+	showStartPage: () => set({ startVideoLoaded: false, showing: "start" }),
+	setStartVideoLoaded: () => set({ startVideoLoaded: true }),
 }));
 
 export default useViewStore;

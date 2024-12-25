@@ -1,9 +1,17 @@
+import { DownloadLogs } from "../wailsjs/go/main/App";
 import logo from "./assets/images/elk-logo.svg";
 import logoText from "./assets/images/elk-text.svg";
 import useAppStore from "./stores/appStore";
+import useViewStore from "./stores/viewStore";
+import { SiteInfo } from "./types";
 
 export default function Sidebar() {
 	const { sites } = useAppStore();
+	const { showFTPEditPage } = useViewStore();
+
+	async function setCurrSite(site: SiteInfo) {
+		await DownloadLogs(site.ftpConfig);
+	}
 
 	return (
 		<div className="w-1/4 h-svh overflow-scroll bg-elk-green">
@@ -14,22 +22,25 @@ export default function Sidebar() {
 					The world's best log viewer
 				</span>
 			</div>
+			<div className="text-white/80 font-bold m-4 text-center uppercase">
+				Sites
+			</div>
 			<div>
 				<ul className="m-4">
 					{sites.map((site) => (
-						<li className="mb-8">
-							<div className="text-white/80 text-center uppercase text-xs font-semibold">
-								{site.name}
-							</div>
-							<ul>
-								{site.logs.map((log) => (
-									<li className="text-white/40 text-right hover:text-white/90 cursor-pointer">
-										{log.name}
-									</li>
-								))}
-							</ul>
+						<li
+							className="text-white/80 text-right mb-2 text-sm font-thin cursor-pointer"
+							onClick={() => setCurrSite(site)}
+						>
+							{site.name}
 						</li>
 					))}
+					<li
+						className="text-white/80 text-right mb-2 text-sm font-thin cursor-pointer"
+						onClick={() => showFTPEditPage(null)}
+					>
+						( + )
+					</li>
 				</ul>
 			</div>
 		</div>
