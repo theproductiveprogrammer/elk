@@ -6,10 +6,7 @@ export default function Sidebar() {
 	const { sites } = useAppStore();
 
 	return (
-		<div
-			className="w-1/4 h-svh overflow-scroll"
-			style={{ backgroundColor: "rgb(130 144 134)" }}
-		>
+		<div className="w-1/4 h-svh overflow-scroll bg-elk-green">
 			<div className="flex flex-col items-center pt-4 border-b pb-7 bg-gray-100 border-green-50">
 				<img src={logo} alt="logo" className="w-10" />
 				<img src={logoText} alt="Elk" className="w-12 mt-2" />
