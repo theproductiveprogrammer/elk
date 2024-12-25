@@ -11,7 +11,7 @@ export default function StartPage() {
 	useEffect(() => {
 		const interval = setInterval(() => {
 			nextRandomQuote();
-		}, 10000);
+		}, 30000);
 
 		return () => clearInterval(interval);
 	}, [quotes]);
