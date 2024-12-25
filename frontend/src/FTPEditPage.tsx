@@ -1,19 +1,21 @@
 import { FormEvent, useEffect, useState } from "react";
-import { SaveFTPConfig } from "../wailsjs/go/main/App";
+import { DeleteFTPConfig, SaveFTPConfig } from "../wailsjs/go/main/App";
 import useViewStore from "./stores/viewStore";
 import clsx from "clsx";
-import {emptyFTPConfig, FTPConfig} from "./types";
+import { emptyFTPConfig, FTPConfig } from "./types";
+import useAppStore from "./stores/appStore";
 
 export default function FTPEditPage() {
-	const { showStartPage, currSite } = useViewStore();
+	const { showStartPage, currSite, setCurrSite } = useViewStore();
+	const { setFTPConfigs } = useAppStore();
 	const [disable, setDisable] = useState(false);
 	const [err, setErr_] = useState("");
 	const [timer, setTimer] = useState<number | null>(null);
-	const [editingFTP, setEditingFTP ] = useState<FTPConfig>(emptyFTPConfig());
+	const [editingFTP, setEditingFTP] = useState<FTPConfig>(emptyFTPConfig());
 
 	useEffect(() => {
-		setEditingFTP(currSite ? {...currSite.ftpConfig} : emptyFTPConfig())
-	}, [currSite])
+		setEditingFTP(currSite ? { ...currSite.ftpConfig } : emptyFTPConfig());
+	}, [currSite]);
 
 	function setErr(err: string) {
 		setErr_(err);
@@ -48,16 +50,24 @@ export default function FTPEditPage() {
 			setErr(err.message || "Error: " + err);
 		}
 		setDisable(false);
+		await setFTPConfigs();
+		showStartPage();
 	}
 
-	function set(key : string, val: string) {
-		const updated :any = {...editingFTP}
+	function set(key: string, val: string) {
+		const updated: any = { ...editingFTP };
 		updated[key] = val;
 		setEditingFTP(updated);
 	}
 
-	function deleteCurr() {
-		// TODO
+	async function deleteCurr() {
+		if (!currSite) {
+			setErr("nothing to delete");
+			return;
+		}
+		await DeleteFTPConfig(currSite.name);
+		await setFTPConfigs();
+		setCurrSite(null);
 	}
 
 	return (
@@ -72,7 +82,7 @@ export default function FTPEditPage() {
 						name="name"
 						placeholder="Name"
 						value={editingFTP.name}
-						onChange={e => set("name", e.target.value)}
+						onChange={(e) => set("name", e.target.value)}
 						className="border p-1 rounded"
 					/>
 				</div>
@@ -84,7 +94,7 @@ export default function FTPEditPage() {
 						name="ip"
 						placeholder="211.211.211.211"
 						value={editingFTP.ip}
-						onChange={e => set("ip", e.target.value)}
+						onChange={(e) => set("ip", e.target.value)}
 						className="border p-1 rounded"
 					/>
 				</div>
@@ -95,7 +105,7 @@ export default function FTPEditPage() {
 						type="text"
 						name="user"
 						value={editingFTP.user}
-						onChange={e => set("user", e.target.value)}
+						onChange={(e) => set("user", e.target.value)}
 						className="border p-1 rounded"
 					/>
 				</div>
@@ -106,7 +116,7 @@ export default function FTPEditPage() {
 						type="password"
 						name="password"
 						value={editingFTP.password}
-						onChange={e => set("password", e.target.value)}
+						onChange={(e) => set("password", e.target.value)}
 						className="border p-1 rounded"
 					/>
 				</div>

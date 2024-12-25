@@ -11,6 +11,7 @@ interface ViewState extends ViewData {
 	showFTPEditPage: (site: SiteInfo | null) => void;
 	showStartPage: () => void;
 	showSite: (site: SiteInfo | null) => void;
+	setCurrSite: (site: SiteInfo | null) => void;
 	setStartVideoLoaded: () => void;
 }
 
@@ -23,6 +24,7 @@ const useViewStore = create<ViewState>((set) => ({
 	},
 	showStartPage: () => set({ startVideoLoaded: false, showing: "start" }),
 	showSite: (site: SiteInfo | null) => set({ currSite: site, showing: "site" }),
+	setCurrSite: (site: SiteInfo |null) => set({currSite: site}),
 	setStartVideoLoaded: () => set({ startVideoLoaded: true }),
 }));
 
