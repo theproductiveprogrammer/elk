@@ -60,6 +60,10 @@ export default function FTPEditPage() {
 		setDisable(false);
 	}
 
+	function deleteCurr() {
+		// TODO
+	}
+
 	return (
 		<div className="m-8">
 			<div className="text-lg font-bold mb-6">Edit Site Details</div>
@@ -110,6 +114,13 @@ export default function FTPEditPage() {
 					>
 						Cancel
 					</button>
+				</div>
+
+				<div
+					className="text-red-500 text-xs mt-8 text-right cursor-pointer hover:underline"
+					onClick={deleteCurr}
+				>
+					DELETE
 				</div>
 			</form>
 		</div>
