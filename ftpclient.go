@@ -10,13 +10,61 @@ import (
 	"github.com/jlaffaye/ftp"
 )
 
+type FTPEntry struct {
+	Name string `json:"name"`
+	Size uint64 `json:"size"`
+	Time int64  `json:"time"`
+}
+
+type SiteInfo struct {
+	Name   string     `json:"name"`
+	Config FTPConfig  `json:"ftpConfig"`
+	Logs   []FTPEntry `json:"logs"`
+	Error  string     `json:"error"`
+}
+
+func entryFrom(ftpEntry *ftp.Entry) FTPEntry {
+	var ret FTPEntry
+	ret.Name = ftpEntry.Name
+	ret.Size = ftpEntry.Size
+	ret.Time = ftpEntry.Time.UnixMilli()
+	return ret
+}
+
+func (a *App) GetLogInfo(config FTPConfig) ([]FTPEntry, error) {
+	conn, err := ftp.Dial(config.IP)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to FTP server: %w", err)
+	}
+	defer conn.Quit()
+
+	err = conn.Login(config.User, config.Password)
+	if err != nil {
+		return nil, fmt.Errorf("failed to login to FTP server: %w", err)
+	}
+
+	entries, err := conn.List(".")
+	if err != nil {
+		return nil, fmt.Errorf("failed to list files: %w", err)
+	}
+
+	var logFiles []FTPEntry
+	for _, entry := range entries {
+		if strings.HasSuffix(entry.Name, ".log") && entry.Type == ftp.EntryTypeFile {
+			logFiles = append(logFiles, entryFrom(entry))
+		}
+	}
+
+	return logFiles, nil
+}
+
 func (a *App) DownloadLogs(config FTPConfig) error {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return fmt.Errorf("failed to get home directory: %w", err)
 	}
 
-	appDataPath := filepath.Join(homeDir, "myappdata", config.Name, "logs")
+	appDataPath := filepath.Join(homeDir, "elkdata", config.Name, "logs")
 	err = os.MkdirAll(appDataPath, os.ModePerm)
 	if err != nil {
 		return fmt.Errorf("failed to create logs directory: %w", err)
@@ -38,10 +86,10 @@ func (a *App) DownloadLogs(config FTPConfig) error {
 		return fmt.Errorf("failed to list files: %w", err)
 	}
 
-	var logFiles []*ftp.Entry
+	var logFiles []ftp.Entry
 	for _, entry := range entries {
 		if strings.HasSuffix(entry.Name, ".log") && entry.Type == ftp.EntryTypeFile {
-			logFiles = append(logFiles, entry)
+			logFiles = append(logFiles, *entry)
 		}
 	}
 
@@ -59,7 +107,7 @@ func (a *App) DownloadLogs(config FTPConfig) error {
 		// Acquire a semaphore slot
 		semaphore <- struct{}{}
 
-		go func(file *ftp.Entry) {
+		go func(file ftp.Entry) {
 			defer wg.Done()
 			defer func() { <-semaphore }() // Release semaphore slot
 
@@ -110,4 +158,18 @@ func (a *App) DownloadLogs(config FTPConfig) error {
 	}
 
 	return nil
+}
+
+func (a *App) GetSiteInfos(infos []SiteInfo) []SiteInfo {
+	var updated []SiteInfo
+	for _, info := range infos {
+		logs, err := a.GetLogInfo(info.Config)
+		if err != nil {
+			info.Error = err.Error()
+		} else {
+			info.Logs = logs
+		}
+		updated = append(updated, info)
+	}
+	return updated
 }

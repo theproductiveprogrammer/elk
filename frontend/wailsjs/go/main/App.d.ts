@@ -8,6 +8,10 @@ export function DownloadLogs(arg1:main.FTPConfig):Promise<void>;
 
 export function GetFTPConfig(arg1:string):Promise<main.FTPConfig>;
 
+export function GetLogInfo(arg1:main.FTPConfig):Promise<Array<main.FTPEntry>>;
+
+export function GetSiteInfos(arg1:Array<main.SiteInfo>):Promise<Array<main.SiteInfo>>;
+
 export function ListFTPConfigs():Promise<Array<string>>;
 
 export function SaveFTPConfig(arg1:main.FTPConfig):Promise<void>;

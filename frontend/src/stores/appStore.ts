@@ -1,9 +1,14 @@
 import { create } from "zustand";
-import { SiteInfo } from "../types";
-import { GetFTPConfig, ListFTPConfigs } from "../../wailsjs/go/main/App";
+import {
+	GetFTPConfig,
+	GetSiteInfos,
+	ListFTPConfigs,
+} from "../../wailsjs/go/main/App";
+
+import { main } from "../../wailsjs/go/models";
 
 interface AppData {
-	sites: SiteInfo[];
+	sites: main.SiteInfo[];
 }
 interface AppState extends AppData {
 	setFTPConfigs: () => Promise<void>;
@@ -18,12 +23,13 @@ const useAppStore = create<AppState>((set) => ({
 			const info = await GetFTPConfig(name);
 			infos.push(info);
 		}
-		const sites = infos.map((i) => ({
-			name: i.name,
-			ftpConfig: i,
-			logs: [],
-		}));
+		const sites = infos.map((i) => main.SiteInfo.createFrom(i));
 		set({ sites });
+		//GetSiteInfos(sites).then((updated) => set({ sites: updated }));
+		GetSiteInfos(sites).then((updated) => {
+			console.log(`got`, updated);
+			set({ sites: updated });
+		});
 	},
 }));
 

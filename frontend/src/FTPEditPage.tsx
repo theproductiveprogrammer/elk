@@ -1,8 +1,9 @@
 import { FormEvent, useEffect, useState } from "react";
 import { DeleteFTPConfig, SaveFTPConfig } from "../wailsjs/go/main/App";
+import { main } from "../wailsjs/go/models";
 import useViewStore from "./stores/viewStore";
 import clsx from "clsx";
-import { emptyFTPConfig, FTPConfig } from "./types";
+import { emptyFTPConfig } from "./types";
 import useAppStore from "./stores/appStore";
 
 export default function FTPEditPage() {
@@ -11,7 +12,8 @@ export default function FTPEditPage() {
 	const [disable, setDisable] = useState(false);
 	const [err, setErr_] = useState("");
 	const [timer, setTimer] = useState<number | null>(null);
-	const [editingFTP, setEditingFTP] = useState<FTPConfig>(emptyFTPConfig());
+	const [editingFTP, setEditingFTP] =
+		useState<main.FTPConfig>(emptyFTPConfig());
 
 	useEffect(() => {
 		setEditingFTP(currSite ? { ...currSite.ftpConfig } : emptyFTPConfig());

@@ -23,6 +23,7 @@ export default function Sidebar() {
 				<ul className="m-4">
 					{sites.map((site) => (
 						<li
+							key={site.name}
 							className="text-white/80 text-right mb-2 text-sm font-thin cursor-pointer"
 							onClick={() => showSite(site)}
 						>
