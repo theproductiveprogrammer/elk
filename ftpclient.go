@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -32,7 +33,10 @@ func entryFrom(ftpEntry *ftp.Entry) FTPEntry {
 }
 
 func (a *App) GetLogInfo(config FTPConfig) ([]FTPEntry, error) {
-	conn, err := ftp.Dial(config.IP)
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: true,
+	}
+	conn, err := ftp.Dial(config.IP+":21", ftp.DialWithExplicitTLS(tlsConfig))
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to FTP server: %w", err)
 	}
@@ -50,7 +54,7 @@ func (a *App) GetLogInfo(config FTPConfig) ([]FTPEntry, error) {
 
 	var logFiles []FTPEntry
 	for _, entry := range entries {
-		if strings.HasSuffix(entry.Name, ".log") && entry.Type == ftp.EntryTypeFile {
+		if strings.HasSuffix(entry.Name, ".log") && entry.Type == ftp.EntryTypeFile && entry.Size > 0 {
 			logFiles = append(logFiles, entryFrom(entry))
 		}
 	}
@@ -88,7 +92,7 @@ func (a *App) DownloadLogs(config FTPConfig) error {
 
 	var logFiles []ftp.Entry
 	for _, entry := range entries {
-		if strings.HasSuffix(entry.Name, ".log") && entry.Type == ftp.EntryTypeFile {
+		if strings.HasSuffix(entry.Name, ".log") && entry.Type == ftp.EntryTypeFile && entry.Size > 0 {
 			logFiles = append(logFiles, *entry)
 		}
 	}
