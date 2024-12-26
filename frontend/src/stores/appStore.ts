@@ -23,7 +23,13 @@ const useAppStore = create<AppState>((set) => ({
 			const info = await GetFTPConfig(name);
 			infos.push(info);
 		}
-		const sites = infos.map((i) => main.SiteInfo.createFrom(i));
+
+		const sites = infos.map((i) =>
+			main.SiteInfo.createFrom({
+				name: i.name,
+				ftpConfig: i,
+			})
+		);
 		set({ sites });
 		//GetSiteInfos(sites).then((updated) => set({ sites: updated }));
 		GetSiteInfos(sites).then((updated) => {

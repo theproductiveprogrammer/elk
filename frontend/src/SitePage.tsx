@@ -17,7 +17,7 @@ export default function SitePage() {
 			{currSite.error && (
 				<div className="text-center text-red-600">{currSite.error}</div>
 			)}
-			<table>
+			<table className="mx-2">
 				<thead>
 					<tr>
 						<th>Name</th>
@@ -29,12 +29,47 @@ export default function SitePage() {
 				{currSite.logs &&
 					currSite.logs.map((log) => (
 						<tr>
-							<td>{log.name}</td>
-							<td>{log.time}</td>
+							<td className="text-left">{log.name}</td>
+							<td>{fmtTime(log.time)}</td>
 							<td>{log.size}</td>
 						</tr>
 					))}
 			</table>
 		</div>
 	);
+}
+
+const MON = [
+	"Jan",
+	"Feb",
+	"Mar",
+	"Apr",
+	"May",
+	"Jun",
+	"Jul",
+	"Aug",
+	"Sep",
+	"Oct",
+	"Nov",
+	"Dec",
+];
+
+function fmtTime(tm: number): string {
+	const date = new Date(tm);
+	const now = new Date();
+	const year = date.getFullYear();
+	const month = MON[date.getMonth()];
+	const day = date.getDate();
+	const hour = p2(date.getHours());
+	const min = p2(date.getMinutes());
+	if (year !== now.getFullYear()) {
+		return `${year}-${month}-${day} ${hour}:${min}`;
+	} else {
+		return `${month}-${day} ${hour}:${min}`;
+	}
+}
+
+function p2(a: number): string {
+	if (a < 10) return "0" + a;
+	return "" + a;
 }
