@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 
@@ -58,6 +59,10 @@ func (a *App) GetLogInfo(config FTPConfig) ([]FTPEntry, error) {
 			logFiles = append(logFiles, entryFrom(entry))
 		}
 	}
+
+	sort.Slice(logFiles, func(i, j int) bool {
+		return strings.ToUpper(logFiles[i].Name) < strings.ToUpper(logFiles[j].Name)
+	})
 
 	return logFiles, nil
 }
