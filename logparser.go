@@ -18,15 +18,17 @@ type LogLine struct {
 }
 
 type LogTransform struct {
-	Match   string `json:"match"`
-	Find    string `json:"find"`
-	Replace string `json:"replace"`
+	FileNames string `json:"filenames"`
+	Match     string `json:"match"`
+	Find      string `json:"find"`
+	Replace   string `json:"replace"`
 }
 
 type CompiledTransformer struct {
-	Match   *regexp.Regexp
-	Find    *regexp.Regexp
-	Replace string
+	FileNames *regexp.Regexp
+	Match     *regexp.Regexp
+	Find      *regexp.Regexp
+	Replace   string
 }
 
 func ParseLog(logfile string, transformers []LogTransform) (*Log, error) {
@@ -34,11 +36,12 @@ func ParseLog(logfile string, transformers []LogTransform) (*Log, error) {
 	if err != nil {
 		return nil, err
 	}
+	name := filepath.Base(logfile)
 	lines := strings.FieldsFunc(string(data), func(c rune) bool { return c == '\n' || c == '\r' })
-	lines, transformerError := applyTransformers(transformers, lines)
+	lines, transformerError := applyTransformers(transformers, name, lines)
 
 	log := Log{
-		name:  filepath.Base(logfile),
+		name:  name,
 		lines: []LogLine{},
 	}
 	for _, line := range lines {
@@ -48,7 +51,7 @@ func ParseLog(logfile string, transformers []LogTransform) (*Log, error) {
 	return &log, transformerError
 }
 
-func applyTransformers(transformers []LogTransform, lines []string) ([]string, error) {
+func applyTransformers(transformers []LogTransform, name string, lines []string) ([]string, error) {
 	if transformers == nil {
 		return lines, nil
 	}
@@ -65,7 +68,7 @@ func applyTransformers(transformers []LogTransform, lines []string) ([]string, e
 	}
 
 	for _, tr := range trs {
-		lines = applyTransformer(tr, lines)
+		lines = applyTransformer(tr, name, lines)
 	}
 
 	if len(errs) > 0 {
@@ -76,6 +79,13 @@ func applyTransformers(transformers []LogTransform, lines []string) ([]string, e
 
 func compile(t LogTransform) (*CompiledTransformer, error) {
 	ret := CompiledTransformer{}
+	if t.FileNames != "" {
+		r, err := regexp.Compile(t.FileNames)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to compile transformer: %s", t.FileNames)
+		}
+		ret.FileNames = r
+	}
 	if t.Match != "" {
 		r, err := regexp.Compile(t.Match)
 		if err != nil {
@@ -96,7 +106,12 @@ func compile(t LogTransform) (*CompiledTransformer, error) {
 	return &ret, nil
 }
 
-func applyTransformer(transformer *CompiledTransformer, lines []string) []string {
+func applyTransformer(transformer *CompiledTransformer, name string, lines []string) []string {
+
+	if transformer.FileNames != nil && transformer.FileNames.FindStringIndex(name) == nil {
+		return lines
+	}
+
 	ret := []string{}
 	for _, line := range lines {
 
@@ -118,20 +133,22 @@ func applyTransformer(transformer *CompiledTransformer, lines []string) []string
 }
 
 func main() {
-	logfile := "/Users/charleslobo/elkdata/test/logs/test.log"
+	logfile := "/Users/charleslobo/elkdata/Test/logs/test.log"
 	transformers := []LogTransform{
 		LogTransform{
-			Find:    "[a-z.]*Platform",
-			Replace: "PlatformService",
+			FileNames: "test",
+			Find:      "[a-z.]*Platform",
+			Replace:   "PlatformService",
 		},
 		LogTransform{
-			Match:   "https",
-			Find:    "PlatformService",
-			Replace: "QuickService",
+			FileNames: "notfound",
+			Match:     "https",
+			Find:      "PlatformService",
+			Replace:   "QuickService",
 		},
 		LogTransform{
 			Match:   "77",
-			Replace: "QuickService",
+			Replace: "Seventy Seven",
 		},
 		LogTransform{
 			Match: "78",
