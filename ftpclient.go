@@ -25,6 +25,62 @@ type SiteInfo struct {
 	Error  string     `json:"error"`
 }
 
+type connectionCache struct {
+	conn *ftp.ServerConn
+	mu   sync.Mutex
+}
+
+var ftpConnCache sync.Map
+
+func GetOrCreateConnection(config FTPConfig) (*ftp.ServerConn, error) {
+	tlsConfig := &tls.Config{InsecureSkipVerify: true}
+
+	cacheKey := config.IP
+	value, ok := ftpConnCache.Load(cacheKey)
+	if !ok {
+		fmt.Println("Getting new connection for " + config.Name)
+		conn, err := ftp.Dial(config.IP+":21", ftp.DialWithExplicitTLS(tlsConfig))
+		if err != nil {
+			return nil, fmt.Errorf("failed to connect to FTP server: %w", err)
+		}
+
+		err = conn.Login(config.User, config.Password)
+		if err != nil {
+			conn.Quit()
+			return nil, fmt.Errorf("failed to login to FTP server: %w", err)
+		}
+
+		newCacheEntry := &connectionCache{conn: conn}
+		ftpConnCache.Store(cacheKey, newCacheEntry)
+		return conn, nil
+	}
+
+	cached := value.(*connectionCache)
+	cached.mu.Lock()
+	defer cached.mu.Unlock()
+
+	if err := cached.conn.NoOp(); err != nil {
+		fmt.Println("Connection NOOP failed! " + config.Name)
+		fmt.Println(err)
+		cached.conn.Quit()
+
+		fmt.Println("Getting new connection for " + config.Name)
+		conn, err := ftp.Dial(config.IP+":21", ftp.DialWithExplicitTLS(tlsConfig))
+		if err != nil {
+			return nil, fmt.Errorf("failed to connect to FTP server: %w", err)
+		}
+
+		err = conn.Login(config.User, config.Password)
+		if err != nil {
+			conn.Quit()
+			return nil, fmt.Errorf("failed to login to FTP server: %w", err)
+		}
+
+		cached.conn = conn
+	}
+	return cached.conn, nil
+}
+
 func entryFrom(ftpEntry *ftp.Entry) FTPEntry {
 	var ret FTPEntry
 	ret.Name = ftpEntry.Name
@@ -34,14 +90,10 @@ func entryFrom(ftpEntry *ftp.Entry) FTPEntry {
 }
 
 func getFileInfos(config FTPConfig) ([]FTPEntry, error) {
-	tlsConfig := &tls.Config{
-		InsecureSkipVerify: true,
-	}
-	conn, err := ftp.Dial(config.IP+":21", ftp.DialWithExplicitTLS(tlsConfig))
+	conn, err := GetOrCreateConnection(config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to FTP server: %w", err)
 	}
-	defer conn.Quit()
 
 	err = conn.Login(config.User, config.Password)
 	if err != nil {
@@ -83,7 +135,6 @@ func (a *App) DownloadLogs(config FTPConfig) error {
 	if err != nil {
 		return fmt.Errorf("failed to connect to FTP server: %w", err)
 	}
-	defer conn.Quit()
 
 	err = conn.Login(config.User, config.Password)
 	if err != nil {
