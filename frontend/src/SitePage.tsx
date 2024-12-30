@@ -15,6 +15,7 @@ export default function SitePage() {
 		if (!currSite) return;
 		setLoading(true);
 		const site = await loadFileInfos(currSite.name);
+		console.log(site);
 		setCurrSite(site);
 		setLoading(false);
 	}
