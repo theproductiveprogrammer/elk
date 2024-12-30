@@ -14,7 +14,7 @@ type Log struct {
 }
 
 type LogLine struct {
-	full string
+	raw string
 }
 
 type LogTransform struct {
@@ -45,7 +45,7 @@ func ParseLog(logfile string, transformers []LogTransform) (*Log, error) {
 		lines: []LogLine{},
 	}
 	for _, line := range lines {
-		log.lines = append(log.lines, LogLine{full: line})
+		log.lines = append(log.lines, LogLine{raw: line})
 	}
 
 	return &log, transformerError
@@ -130,37 +130,4 @@ func applyTransformer(transformer *CompiledTransformer, name string, lines []str
 		}
 	}
 	return ret
-}
-
-func main() {
-	logfile := "/Users/charleslobo/elkdata/Test/logs/test.log"
-	transformers := []LogTransform{
-		LogTransform{
-			FileNames: "test",
-			Find:      "[a-z.]*Platform",
-			Replace:   "PlatformService",
-		},
-		LogTransform{
-			FileNames: "notfound",
-			Match:     "https",
-			Find:      "PlatformService",
-			Replace:   "QuickService",
-		},
-		LogTransform{
-			Match:   "77",
-			Replace: "Seventy Seven",
-		},
-		LogTransform{
-			Match: "78",
-		},
-	}
-	log, err := ParseLog(logfile, transformers)
-	if err != nil {
-		fmt.Println(err)
-	} else {
-		fmt.Println(log.name)
-		for _, l := range log.lines {
-			fmt.Println(l)
-		}
-	}
 }
