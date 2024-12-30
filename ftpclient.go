@@ -192,7 +192,7 @@ func (a *App) DownloadLogs(site SiteInfo) []error {
 			if err == nil {
 				localSize := uint64(stat.Size())
 				if localSize == file.Size {
-					runtime.LogInfo(a.ctx, fmt.Sprint("File %s already exists and size matches. Skipping...", file.Name))
+					runtime.LogInfo(a.ctx, fmt.Sprintf("File %s already exists and size matches. Skipping...", file.Name))
 					return
 				}
 
