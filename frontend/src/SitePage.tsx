@@ -30,7 +30,7 @@ export default function SitePage() {
 				<tbody></tbody>
 				{currSite.logs &&
 					currSite.logs.map((log) => (
-						<tr>
+						<tr key={log.name}>
 							<td className="text-left">{log.name}</td>
 							<td>{fmtTime(log.time)}</td>
 							<td>{log.size}</td>
