@@ -1,0 +1,12 @@
+2024-12-30 04:50:41,124 518278 [main] INFO  c.salesboxai.platform.api.Platform - api call to https://dev-platform.salesbox.ai/msgqueue/find-all with {"sortBy":"id","asc":true,"limit__eq":100,"status__eq":0}
+2024-12-30 04:50:41,130 518284 [main] DEBUG c.salesboxai.platform.api.Platform - api call /msgqueue/find-all com.salesboxai.platform.dto.MsgQueueParams@2b56774b response: []
+127.0.0.1 - - [31/Dec/2024 07:58:45] "POST / HTTP/1.1" 404 -
+127.0.0.1 - - [31/Dec/2024 07:58:52] "POST /convert-parquet HTTP/1.1" 500 -
+2024-12-30 07:09:38,521 2387489 [default-nioEventLoopGroup-1-3] INFO  s.platform.bizlogic.WebVisitService - DUF 20665: Industry filter failed: No industry found but funnel needs ALL,96
+2024-12-30 07:09:38,528 2387496 [default-nioEventLoopGroup-1-3] INFO  s.platform.bizlogic.WebVisitService - DUF 20670: Country filter passed: United States = United States
+2023-12-11 18:06:19,946 - root - INFO - Prediction successful for Input Title: Realtor => Job function: Real Estate
+2023-12-12 04:57:25,596 - root - INFO - Prediction successful for Input Title: IT MAnager => Job function: Information Technology
+2024-12-30 22:10:35,794 - db.py - INFO - getting pending indexes...
+2024-12-30 22:10:43,215 - heartbeat.py - INFO - ((( proc.py heartbeat ))) cycle 4594
+INF | Getting new connection for Test
+ERR | failed to connect to FTP server: dial tcp 0.0.0.124:21: connect: no route to host

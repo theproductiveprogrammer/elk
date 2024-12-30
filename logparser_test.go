@@ -6,7 +6,7 @@ import (
 )
 
 func TestLogParser(t *testing.T) {
-	logfile := "/Users/charleslobo/elkdata/Test/logs/test.log"
+	logfile := "sample_test.log"
 	transformers := []LogTransform{
 		LogTransform{
 			FileNames: "test",
