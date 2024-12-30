@@ -12,8 +12,9 @@ export default function SitePage() {
 	}, [currSite?.name]);
 
 	async function refresh() {
+		if (!currSite) return;
 		setLoading(true);
-		const site = await loadFileInfos(currSite);
+		const site = await loadFileInfos(currSite.name);
 		setCurrSite(site);
 		setLoading(false);
 	}
@@ -29,12 +30,14 @@ export default function SitePage() {
 		);
 	}
 	if (currSite.error) {
-		<div className="w-3/4 h-svh overflow-scroll">
-			<Header currSite={currSite} />
-			{currSite.error && (
-				<div className="text-center text-red-600">{currSite.error}</div>
-			)}
-		</div>;
+		return (
+			<div className="w-3/4 h-svh overflow-scroll">
+				<Header currSite={currSite} />
+				{currSite.error && (
+					<div className="text-center text-red-600">{currSite.error}</div>
+				)}
+			</div>
+		);
 	}
 
 	return (
