@@ -3,9 +3,30 @@ import {
 	ListFTPConfigs,
 	GetFileInfos,
 	DownloadLogs,
+	DownloadLog,
 } from "../wailsjs/go/main/App";
 
 import { main } from "../wailsjs/go/models";
+
+let downloadingLog = false;
+export async function downloadLog(
+	site: main.SiteInfo,
+	log: main.FTPEntry
+): Promise<string> {
+	while (downloadingLog) {
+		await new Promise((resolve) => setTimeout(resolve, 500));
+	}
+	downloadingLog = true;
+
+	try {
+		const data = await DownloadLog(site, log);
+		downloadingLog = false;
+		return data;
+	} catch (err) {
+		downloadingLog = false;
+		throw err;
+	}
+}
 
 interface FetchInfo {
 	fetching: boolean;

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import useViewStore from "./stores/viewStore";
-import { DownloadLog } from "../wailsjs/go/main/App";
 import { main } from "../wailsjs/go/models";
+import { downloadLog } from "./FTPHandler";
 
 export default function LogViewer() {
 	const { currSite, currFile } = useViewStore();
@@ -12,7 +12,7 @@ export default function LogViewer() {
 		(async function () {
 			if (!currSite || !currFile) return;
 			setLoading(true);
-			const data = await DownloadLog(currSite, currFile);
+			const data = await downloadLog(currSite, currFile);
 			setData(data);
 			setLoading(false);
 		})();

@@ -3,7 +3,6 @@ import { DeleteFTPConfig, SaveFTPConfig } from "../wailsjs/go/main/App";
 import { main } from "../wailsjs/go/models";
 import useViewStore from "./stores/viewStore";
 import clsx from "clsx";
-import { emptyFTPConfig } from "./types";
 import useAppStore from "./stores/appStore";
 
 export default function FTPEditPage() {
@@ -16,7 +15,7 @@ export default function FTPEditPage() {
 		useState<main.FTPConfig>(emptyFTPConfig());
 
 	useEffect(() => {
-		setEditingFTP(currSite ? { ...currSite.ftpConfig } : emptyFTPConfig());
+		setEditingFTP(main.FTPConfig.createFrom(currSite?.ftpConfig));
 	}, [currSite]);
 
 	function setErr(err: string) {
@@ -148,4 +147,8 @@ export default function FTPEditPage() {
 			</form>
 		</div>
 	);
+}
+
+function emptyFTPConfig(): main.FTPConfig {
+	return main.FTPConfig.createFrom();
 }

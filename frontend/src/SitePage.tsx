@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import useViewStore from "./stores/viewStore";
 import { main } from "../wailsjs/go/models";
 import { loadFileInfos } from "./FTPHandler";
-import { DownloadLog } from "../wailsjs/go/main/App";
 
 export default function SitePage() {
 	const { currSite, setCurrSite, showLogFile } = useViewStore();

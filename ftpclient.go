@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/jlaffaye/ftp"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 type FTPEntry struct {
@@ -26,19 +27,23 @@ type SiteInfo struct {
 	Error  string     `json:"error"`
 }
 
-func getConnection(config FTPConfig) (*ftp.ServerConn, error) {
-	fmt.Println("Getting new connection for " + config.Name)
+func (a *App) getConnection(config FTPConfig) (*ftp.ServerConn, error) {
+	runtime.LogInfo(a.ctx, fmt.Sprintf("Getting new connection for %s", config.Name))
 
 	tlsConfig := &tls.Config{InsecureSkipVerify: true}
 	conn, err := ftp.Dial(config.IP+":21", ftp.DialWithExplicitTLS(tlsConfig))
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to FTP server: %w", err)
+		err = fmt.Errorf("failed to connect to FTP server: %w", err)
+		runtime.LogError(a.ctx, err.Error())
+		return nil, err
 	}
 
 	err = conn.Login(config.User, config.Password)
 	if err != nil {
 		conn.Quit()
-		return nil, fmt.Errorf("failed to login to FTP server: %w", err)
+		err = fmt.Errorf("failed to login to FTP server: %w", err)
+		runtime.LogError(a.ctx, err.Error())
+		return nil, err
 	}
 
 	return conn, nil
@@ -51,11 +56,11 @@ type connectionCache struct {
 
 var ftpConnCache sync.Map
 
-func getOrCreateConnection(config FTPConfig) (*ftp.ServerConn, error) {
+func (a *App) getOrCreateConnection(config FTPConfig) (*ftp.ServerConn, error) {
 	cacheKey := config.IP
 	value, ok := ftpConnCache.Load(cacheKey)
 	if !ok {
-		conn, err := getConnection(config)
+		conn, err := a.getConnection(config)
 		if err != nil {
 			return nil, err
 		}
@@ -69,10 +74,10 @@ func getOrCreateConnection(config FTPConfig) (*ftp.ServerConn, error) {
 	defer cached.mu.Unlock()
 
 	if err := cached.conn.NoOp(); err != nil {
-		fmt.Println("Connection NOOP failed! " + config.Name)
-		fmt.Println(err)
+		runtime.LogWarning(a.ctx, "Connection NOOP failed! "+config.Name)
+		runtime.LogError(a.ctx, err.Error())
 		cached.conn.Quit()
-		conn, err := getConnection(config)
+		conn, err := a.getConnection(config)
 		if err != nil {
 			return nil, err
 		}
@@ -89,20 +94,28 @@ func entryFrom(ftpEntry *ftp.Entry) FTPEntry {
 	return ret
 }
 
-func getFileInfos(config FTPConfig) ([]FTPEntry, error) {
-	conn, err := getOrCreateConnection(config)
+func (a *App) getFileInfos(config FTPConfig) ([]FTPEntry, error) {
+	runtime.LogInfo(a.ctx, fmt.Sprintf("FileInfos: %s", config.Name))
+
+	conn, err := a.getOrCreateConnection(config)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to FTP server: %w", err)
+		err = fmt.Errorf("failed to connect to FTP server: %w", err)
+		runtime.LogError(a.ctx, err.Error())
+		return nil, err
 	}
 
 	err = conn.Login(config.User, config.Password)
 	if err != nil {
-		return nil, fmt.Errorf("failed to login to FTP server: %w", err)
+		err = fmt.Errorf("failed to login to FTP server: %w", err)
+		runtime.LogError(a.ctx, err.Error())
+		return nil, err
 	}
 
 	entries, err := conn.List(".")
 	if err != nil {
-		return nil, fmt.Errorf("failed to list files: %w", err)
+		err = fmt.Errorf("failed to list files: %w", err)
+		runtime.LogError(a.ctx, err.Error())
+		return nil, err
 	}
 
 	var logFiles []FTPEntry
@@ -116,11 +129,12 @@ func getFileInfos(config FTPConfig) ([]FTPEntry, error) {
 		return strings.ToUpper(logFiles[i].Name) < strings.ToUpper(logFiles[j].Name)
 	})
 
+	runtime.LogInfo(a.ctx, fmt.Sprintf("returning %d logs for %s", len(logFiles), config.Name))
 	return logFiles, nil
 }
 
 func (a *App) GetFileInfos(config FTPConfig) SiteInfo {
-	logs, err := getFileInfos(config)
+	logs, err := a.getFileInfos(config)
 	site := SiteInfo{
 		Name:   config.Name,
 		Config: config,
@@ -136,6 +150,7 @@ func (a *App) GetFileInfos(config FTPConfig) SiteInfo {
 }
 
 func (a *App) DownloadLogs(site SiteInfo) []error {
+	runtime.LogWarning(a.ctx, fmt.Sprintf("UNEXPECTED CALLING BACKGROUND FUNCTION"))
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return []error{fmt.Errorf("failed to get home directory: %w", err)}
@@ -147,7 +162,7 @@ func (a *App) DownloadLogs(site SiteInfo) []error {
 		return []error{fmt.Errorf("failed to create logs directory: %w", err)}
 	}
 
-	conn, err := getOrCreateConnection(site.Config)
+	conn, err := a.getOrCreateConnection(site.Config)
 	if err != nil {
 		return []error{fmt.Errorf("failed to connect to FTP server: %w", err)}
 	}
@@ -177,7 +192,7 @@ func (a *App) DownloadLogs(site SiteInfo) []error {
 			if err == nil {
 				localSize := uint64(stat.Size())
 				if localSize == file.Size {
-					fmt.Printf("File %s already exists and size matches. Skipping...\n", file.Name)
+					runtime.LogInfo(a.ctx, fmt.Sprint("File %s already exists and size matches. Skipping...", file.Name))
 					return
 				}
 
@@ -185,7 +200,7 @@ func (a *App) DownloadLogs(site SiteInfo) []error {
 				if localSize < file.Size {
 					modTime := stat.ModTime()
 					if time.Since(modTime) < 24*time.Hour {
-						fmt.Printf("Resuming download for file %s...\n", file.Name)
+						runtime.LogInfo(a.ctx, fmt.Sprintf("Resuming download for file %s...", file.Name))
 
 						localFile, err := os.OpenFile(localPath, os.O_APPEND|os.O_WRONLY, os.ModePerm)
 						if err != nil {
@@ -213,13 +228,13 @@ func (a *App) DownloadLogs(site SiteInfo) []error {
 							return
 						}
 
-						fmt.Printf("Resumed and completed download for file %s successfully\n", file.Name)
+						runtime.LogInfo(a.ctx, fmt.Sprintf("Resumed and completed download for file %s successfully", file.Name))
 						return
 					}
 				}
 			}
 
-			fmt.Printf("Downloading file %s to %s...\n", file.Name, localPath)
+			runtime.LogInfo(a.ctx, fmt.Sprintf("Downloading file %s to %s...", file.Name, localPath))
 			r, err := conn.Retr(file.Name)
 			if err != nil {
 				mu.Lock()
@@ -246,15 +261,15 @@ func (a *App) DownloadLogs(site SiteInfo) []error {
 				return
 			}
 
-			fmt.Printf("Downloaded file %s successfully\n", file.Name)
+			runtime.LogInfo(a.ctx, fmt.Sprintf("Downloaded file %s successfully", file.Name))
 		}(file)
 	}
 
 	wg.Wait()
 
 	if len(errors) > 0 {
-		for _, e := range errors {
-			fmt.Println(e)
+		for _, err := range errors {
+			runtime.LogError(a.ctx, err.Error())
 		}
 	}
 
@@ -262,84 +277,100 @@ func (a *App) DownloadLogs(site SiteInfo) []error {
 }
 
 func (a *App) DownloadLog(site SiteInfo, file FTPEntry) (string, error) {
+	runtime.LogInfo(a.ctx, fmt.Sprintf("DownloadLog: %s", file.Name))
+
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		return "", fmt.Errorf("failed to get home directory: %w", err)
+		err = fmt.Errorf("failed to get home directory: %w", err)
+		runtime.LogError(a.ctx, err.Error())
+		return "", err
 	}
 
 	appDataPath := filepath.Join(homeDir, "elkdata", site.Name, "logs")
 	err = os.MkdirAll(appDataPath, os.ModePerm)
 	if err != nil {
-		return "", fmt.Errorf("failed to create logs directory: %w", err)
+		err = fmt.Errorf("failed to create logs directory: %w", err)
+		runtime.LogError(a.ctx, err.Error())
+		return "", err
 	}
 
 	localPath := filepath.Join(appDataPath, file.Name)
 	localSize := uint64(0)
+	since := 100 * time.Hour
 
 	stat, staterr := os.Stat(localPath)
 	if staterr == nil {
 		localSize = uint64(stat.Size())
+		modTime := stat.ModTime()
+		since = time.Since(modTime)
 	}
 
-	if localSize == file.Size {
-		fmt.Printf("File %s already exists and size matches. No need to fetch...\n", file.Name)
+	if since.Hours() < 24 && localSize >= file.Size {
+		runtime.LogInfo(a.ctx, fmt.Sprintf("File %s already exists and size matches. No need to fetch...", file.Name))
 		return readFile(localPath)
 	}
 
-	conn, err := getConnection(site.Config)
+	conn, err := a.getConnection(site.Config)
 	if err != nil {
-		return "", fmt.Errorf("failed to connect to FTP server: %w", err)
+		err = fmt.Errorf("failed to connect to FTP server: %w", err)
+		runtime.LogError(a.ctx, err.Error())
+		return "", err
 	}
 	defer conn.Quit()
 
-	// Check if partial download is possible
-	if localSize > 1 && localSize < file.Size {
-		modTime := stat.ModTime()
-		if time.Since(modTime) < 24*time.Hour {
-			fmt.Printf("Resuming download for file %s...\n", file.Name)
+	runtime.LogInfo(a.ctx, fmt.Sprintf("localSize: %d, fileSize: %d, since: %.2f", localSize, file.Size, since.Hours()))
+	if since.Hours() < 24 && localSize > 1000 {
+		runtime.LogInfo(a.ctx, fmt.Sprintf("Downloading additional part for file %s...", file.Name))
 
-			localFile, err := os.OpenFile(localPath, os.O_APPEND|os.O_WRONLY, os.ModePerm)
-			if err != nil {
-				return "", fmt.Errorf("failed to open local file %s: %w", localPath, err)
-			}
-			defer localFile.Close()
-
-			r, err := conn.RetrFrom(file.Name, localSize)
-			if err != nil {
-				return "", fmt.Errorf("failed to resume download for file %s: %w", file.Name, err)
-			}
-			defer r.Close()
-
-			_, err = localFile.ReadFrom(r)
-			if err != nil {
-				return "", fmt.Errorf("failed to append to file %s: %w", localPath, err)
-			}
-
-			fmt.Printf("Resumed and completed download for file %s successfully\n", file.Name)
-			return readFile(localPath)
+		localFile, err := os.OpenFile(localPath, os.O_APPEND|os.O_WRONLY, os.ModePerm)
+		if err != nil {
+			return "", fmt.Errorf("failed to open local file %s: %w", localPath, err)
 		}
-	}
+		defer localFile.Close()
 
-	fmt.Printf("Downloading file %s to %s...\n", file.Name, localPath)
-	r, err := conn.Retr(file.Name)
-	if err != nil {
-		return "", fmt.Errorf("failed to download file %s: %w", file.Name, err)
-	}
-	defer r.Close()
+		r, err := conn.RetrFrom(file.Name, localSize)
+		if err != nil {
+			return "", fmt.Errorf("failed to download part for file %s: %w", file.Name, err)
+		}
+		defer r.Close()
 
-	localFile, err := os.Create(localPath)
-	if err != nil {
-		return "", fmt.Errorf("failed to create local file %s: %w", localPath, err)
-	}
-	defer localFile.Close()
+		_, err = localFile.ReadFrom(r)
+		if err != nil {
+			return "", fmt.Errorf("failed to append to file %s: %w", localPath, err)
+		}
 
-	_, err = localFile.ReadFrom(r)
-	if err != nil {
-		return "", fmt.Errorf("failed to save file %s: %w", localPath, err)
-	}
+		runtime.LogInfo(a.ctx, fmt.Sprintf("Completed part download for file %s successfully", file.Name))
+		return readFile(localPath)
 
-	fmt.Printf("Downloaded file %s successfully\n", file.Name)
-	return readFile(localPath)
+	} else {
+
+		runtime.LogInfo(a.ctx, fmt.Sprintf("Downloading file %s to %s...", file.Name, localPath))
+		r, err := conn.Retr(file.Name)
+		if err != nil {
+			err = fmt.Errorf("failed to download file %s: %w", file.Name, err)
+			runtime.LogError(a.ctx, err.Error())
+			return "", err
+		}
+		defer r.Close()
+
+		localFile, err := os.Create(localPath)
+		if err != nil {
+			err = fmt.Errorf("failed to create local file %s: %w", localPath, err)
+			runtime.LogError(a.ctx, err.Error())
+			return "", err
+		}
+		defer localFile.Close()
+
+		_, err = localFile.ReadFrom(r)
+		if err != nil {
+			err = fmt.Errorf("failed to save file %s: %w", localPath, err)
+			runtime.LogError(a.ctx, err.Error())
+			return "", err
+		}
+
+		runtime.LogInfo(a.ctx, fmt.Sprintf("Downloaded file %s successfully", file.Name))
+		return readFile(localPath)
+	}
 }
 
 func readFile(p string) (string, error) {
