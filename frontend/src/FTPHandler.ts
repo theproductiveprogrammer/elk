@@ -1,4 +1,8 @@
-import { GetFTPConfig, ListFTPConfigs } from "../wailsjs/go/main/App";
+import {
+	GetFTPConfig,
+	ListFTPConfigs,
+	GetFileInfos,
+} from "../wailsjs/go/main/App";
 
 import { main } from "../wailsjs/go/models";
 
@@ -35,4 +39,11 @@ export async function loadFTPInfos(): Promise<main.SiteInfo[]> {
 		.sort()
 		.map((k) => ret.push(CACHE[k].site));
 	return ret;
+}
+
+export async function loadFileInfos(
+	site: main.SiteInfo | null
+): Promise<main.SiteInfo | null> {
+	if (!site) return site;
+	return await GetFileInfos(site.ftpConfig);
 }

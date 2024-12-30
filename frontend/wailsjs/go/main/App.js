@@ -14,12 +14,8 @@ export function GetFTPConfig(arg1) {
   return window['go']['main']['App']['GetFTPConfig'](arg1);
 }
 
-export function GetLogInfo(arg1) {
-  return window['go']['main']['App']['GetLogInfo'](arg1);
-}
-
-export function GetSiteInfos(arg1) {
-  return window['go']['main']['App']['GetSiteInfos'](arg1);
+export function GetFileInfos(arg1) {
+  return window['go']['main']['App']['GetFileInfos'](arg1);
 }
 
 export function ListFTPConfigs() {

@@ -33,7 +33,7 @@ func entryFrom(ftpEntry *ftp.Entry) FTPEntry {
 	return ret
 }
 
-func (a *App) GetLogInfo(config FTPConfig) ([]FTPEntry, error) {
+func getFileInfos(config FTPConfig) ([]FTPEntry, error) {
 	tlsConfig := &tls.Config{
 		InsecureSkipVerify: true,
 	}
@@ -169,16 +169,18 @@ func (a *App) DownloadLogs(config FTPConfig) error {
 	return nil
 }
 
-func (a *App) GetSiteInfos(infos []SiteInfo) []SiteInfo {
-	var updated []SiteInfo
-	for _, info := range infos {
-		logs, err := a.GetLogInfo(info.Config)
-		if err != nil {
-			info.Error = err.Error()
-		} else {
-			info.Logs = logs
-		}
-		updated = append(updated, info)
+func (a *App) GetFileInfos(config FTPConfig) SiteInfo {
+	logs, err := getFileInfos(config)
+	site := SiteInfo{
+		Name:   config.Name,
+		Config: config,
+		Logs:   []FTPEntry{},
+		Error:  "",
 	}
-	return updated
+	if err != nil {
+		site.Error = err.Error()
+	} else {
+		site.Logs = logs
+	}
+	return site
 }
