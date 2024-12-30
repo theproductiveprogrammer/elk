@@ -9,10 +9,11 @@ import (
 )
 
 type FTPConfig struct {
-	Name     string `json:"name"`
-	IP       string `json:"ip"`
-	User     string `json:"user"`
-	Password string `json:"password"`
+	Name         string         `json:"name"`
+	IP           string         `json:"ip"`
+	User         string         `json:"user"`
+	Password     string         `json:"password"`
+	Transformers []LogTransform `json:"transformers"`
 }
 
 func (a *App) SaveFTPConfig(config FTPConfig) error {
