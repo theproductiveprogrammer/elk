@@ -4,7 +4,9 @@ import {main} from '../models';
 
 export function DeleteFTPConfig(arg1:string):Promise<void>;
 
-export function DownloadLogs(arg1:main.FTPConfig):Promise<void>;
+export function DownloadLog(arg1:main.SiteInfo,arg2:main.FTPEntry):Promise<string>;
+
+export function DownloadLogs(arg1:main.SiteInfo):Promise<Array<Error>>;
 
 export function GetFTPConfig(arg1:string):Promise<main.FTPConfig>;
 

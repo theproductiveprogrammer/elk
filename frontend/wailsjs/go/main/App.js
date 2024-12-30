@@ -6,6 +6,10 @@ export function DeleteFTPConfig(arg1) {
   return window['go']['main']['App']['DeleteFTPConfig'](arg1);
 }
 
+export function DownloadLog(arg1, arg2) {
+  return window['go']['main']['App']['DownloadLog'](arg1, arg2);
+}
+
 export function DownloadLogs(arg1) {
   return window['go']['main']['App']['DownloadLogs'](arg1);
 }

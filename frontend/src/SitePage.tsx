@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import useViewStore from "./stores/viewStore";
 import { main } from "../wailsjs/go/models";
 import { loadFileInfos } from "./FTPHandler";
+import { DownloadLog } from "../wailsjs/go/main/App";
 
 export default function SitePage() {
-	const { currSite, setCurrSite } = useViewStore();
+	const { currSite, setCurrSite, showLogFile } = useViewStore();
 	const [loading, setLoading] = useState(false);
 
 	useEffect(() => {
@@ -18,6 +19,10 @@ export default function SitePage() {
 		console.log(site);
 		setCurrSite(site);
 		setLoading(false);
+	}
+
+	async function showlog(log: main.FTPEntry) {
+		showLogFile(log);
 	}
 
 	if (!currSite) return <div>UNEXPECTED ERROR: 10101</div>;
@@ -55,7 +60,11 @@ export default function SitePage() {
 				<tbody>
 					{currSite.logs &&
 						currSite.logs.map((log) => (
-							<tr key={log.name}>
+							<tr
+								key={log.name}
+								className="cursor-pointer hover:underline"
+								onClick={() => showlog(log)}
+							>
 								<td className="text-left">{log.name}</td>
 								<td>{fmtTime(log.time)}</td>
 								<td>{log.size}</td>

@@ -2,13 +2,19 @@ import {
 	GetFTPConfig,
 	ListFTPConfigs,
 	GetFileInfos,
+	DownloadLogs,
 } from "../wailsjs/go/main/App";
 
 import { main } from "../wailsjs/go/models";
 
+interface FetchInfo {
+	fetching: boolean;
+	at: number;
+}
+
 interface FetchedInfo {
-	fileInfoFetching: boolean;
-	fileInfoAt: number;
+	fileInfo: FetchInfo;
+	fileData: FetchInfo;
 }
 
 interface CachedSite {
@@ -34,7 +40,13 @@ export async function loadFTPInfos(): Promise<main.SiteInfo[]> {
 				name: i.name,
 				ftpConfig: i,
 			});
-			CACHE[i.name] = { site, fi: { fileInfoFetching: false, fileInfoAt: 0 } };
+			CACHE[i.name] = {
+				site,
+				fi: {
+					fileInfo: { fetching: false, at: 0 },
+					fileData: { fetching: false, at: 0 },
+				},
+			};
 		} else {
 			CACHE[i.name].site.ftpConfig = i;
 		}
@@ -54,8 +66,8 @@ const WAIT_TIME = 500;
 
 export async function loadFileInfos(n: string): Promise<main.SiteInfo> {
 	const entry = CACHE[n];
-	if (!entry.fi.fileInfoAt) {
-		while (!entry.fi.fileInfoAt) {
+	if (!entry.fi.fileInfo.at) {
+		while (!entry.fi.fileInfo.at) {
 			await new Promise((resolve) => setTimeout(resolve, WAIT_TIME));
 		}
 	}
@@ -67,21 +79,48 @@ function backgroundLoadFileInfos() {
 }
 async function bgLoadFileInfos(name: string) {
 	const entry = CACHE[name];
-	if (entry.fi.fileInfoFetching) return;
+	if (entry.fi.fileInfo.fetching) return;
 	const s = Date.now();
-	if (entry.site.error && s - entry.fi.fileInfoAt < FETCH_ERR_CYCLE_TIME)
+	if (entry.site.error && s - entry.fi.fileInfo.at < FETCH_ERR_CYCLE_TIME)
 		return;
-	if (s - entry.fi.fileInfoAt < FETCH_CYCLE_TIME) return;
+	if (s - entry.fi.fileInfo.at < FETCH_CYCLE_TIME) return;
 	console.log(`loading file info for: ${name}`);
-	entry.fi.fileInfoFetching = true;
+	entry.fi.fileInfo.fetching = true;
 	entry.site = await GetFileInfos(entry.site.ftpConfig);
-	entry.fi.fileInfoAt = Date.now();
-	entry.fi.fileInfoFetching = false;
+	entry.fi.fileInfo.at = Date.now();
+	entry.fi.fileInfo.fetching = false;
 	if (entry.site.error) {
 		console.warn(`error loading ${name}`, entry.site.error);
 	} else {
 		console.log(
-			`loaded file info for: ${name} in ${Math.round((entry.fi.fileInfoAt - s) / 1000)}s`
+			`loaded file info for: ${name} in ${Math.round((entry.fi.fileInfo.at - s) / 1000)}s`
+		);
+	}
+}
+
+function backgroundDownload() {
+	Object.keys(CACHE).forEach(bgDownload);
+}
+async function bgDownload(name: string) {
+	const entry = CACHE[name];
+	if (entry.site.error) return;
+
+	if (entry.fi.fileData.fetching) return;
+
+	const s = Date.now();
+	if (s - entry.fi.fileData.at < FETCH_CYCLE_TIME) return;
+	console.log(`downloading files for: ${name}`);
+	console.log({ entry });
+	entry.fi.fileData.fetching = true;
+	const errors = await DownloadLogs(entry.site);
+	entry.fi.fileData.at = Date.now();
+	entry.fi.fileData.fetching = false;
+	if (errors && errors.length) {
+		console.error(`Failed downloading files in ${name}`);
+		errors.forEach((err) => console.error(err));
+	} else {
+		console.log(
+			`downloaded files for: ${name} in ${Math.round((entry.fi.fileInfo.at - s) / 1000)}s`
 		);
 	}
 }
@@ -95,6 +134,7 @@ async function backgroundLoad() {
 		}
 		await new Promise((resolve) => setTimeout(resolve, WAIT_TIME));
 		backgroundLoadFileInfos();
+		if (0) backgroundDownload();
 	}
 }
 backgroundLoad();
