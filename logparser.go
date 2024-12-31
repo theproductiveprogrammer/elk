@@ -58,7 +58,19 @@ func ParseLog(logfile string, transformers []LogTransform) (*Log, error) {
 		lines: []LogLine{},
 	}
 	for _, line := range lines {
-		log.lines = append(log.lines, parseLogLine(line))
+		ll := parseLogLine(line)
+		if ll.Msg == "" && ll.Src == nil && ll.On == nil && ll.Raw != "" {
+			if len(log.lines) > 0 {
+				last := &log.lines[len(log.lines)-1]
+				last.Msg += "\n" + ll.Raw
+				last.Raw += "\n" + ll.Raw
+			} else {
+				ll.Msg = ll.Raw
+				log.lines = append(log.lines, ll)
+			}
+		} else {
+			log.lines = append(log.lines, ll)
+		}
 	}
 
 	return &log, transformerError
@@ -68,6 +80,10 @@ var splitRx *regexp.Regexp = regexp.MustCompile(`\s`)
 
 func parseLogLine(line string) LogLine {
 	ll := LogLine{Raw: line}
+
+	if line[0] == ' ' || line[0] == '\t' || line[0] == '}' {
+		return ll
+	}
 
 	tokens := splitRx.Split(line, 10)
 
