@@ -161,6 +161,17 @@ func isSource(token string) bool {
 		}
 	}
 
+	// Check if it is a java package name
+	numdots := 0
+	for _, c := range token {
+		if c == '.' {
+			numdots++
+		}
+	}
+	if numdots > 2 {
+		return true
+	}
+
 	// Check for thread-like or module-like patterns (e.g., [main])
 	if strings.HasPrefix(token, "[") && strings.HasSuffix(token, "]") {
 		return true
@@ -231,12 +242,16 @@ func popDatetime(tokens []string) (*time.Time, []string, int) {
 
 		if len(tokens) > f.tokenCount {
 			p := strings.Join(tokens[:f.tokenCount], " ")
+			op := p
+			if strings.HasPrefix(p, "[") && strings.HasSuffix(p, "]") {
+				p = p[1 : len(p)-1]
+			}
 			t, err := time.Parse(f.format, p)
 			if err == nil {
 				if t.Year() < 1900 {
 					t = time.Date(time.Now().Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second(), t.Nanosecond(), t.Location())
 				}
-				return &t, tokens[f.tokenCount:], len(p) + 1
+				return &t, tokens[f.tokenCount:], len(op) + 1
 			}
 		}
 	}
