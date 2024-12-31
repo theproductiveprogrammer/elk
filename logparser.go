@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -16,11 +17,12 @@ type Log struct {
 }
 
 type LogLine struct {
-	Level *string    `json:"level"`
-	On    *time.Time `json:"on"`
-	Src   *string    `json:"src"`
-	Msg   string     `json:msg""`
-	Raw   string     `json:"raw"`
+	Level *string         `json:"level"`
+	On    *time.Time      `json:"on"`
+	Src   *string         `json:"src"`
+	Msg   string          `json:msg""`
+	JSON  json.RawMessage `json:"json"`
+	Raw   string          `json:"raw"`
 }
 
 type LogTransform struct {
@@ -35,6 +37,11 @@ type CompiledTransformer struct {
 	Match     *regexp.Regexp
 	Find      *regexp.Regexp
 	Replace   string
+}
+
+type JsonX struct {
+	Line string          `json:"line"`
+	JSON json.RawMessage `json:"json"`
 }
 
 func ParseLog(logfile string, transformers []LogTransform) (*Log, error) {
@@ -124,7 +131,10 @@ func parseLogLine(line string) LogLine {
 			}
 		}
 
-		ll.Msg = line[eaten:]
+		xtract := xtractJSON(line[eaten:])
+		ll.Msg = xtract.Line
+		ll.JSON = xtract.JSON
+
 		return ll
 
 	}
@@ -338,4 +348,27 @@ func applyTransformer(transformer *CompiledTransformer, name string, lines []str
 		}
 	}
 	return ret
+}
+
+func xtractJSON(line string) JsonX {
+	x := JsonX{}
+	if len(line) == 0 {
+		return x
+	}
+	if !strings.HasSuffix(line, "}") {
+		x.Line = line
+		return x
+	}
+	for i, c := range line {
+		if c == '{' {
+			var parsedJSON json.RawMessage
+			err := json.Unmarshal([]byte(line[i:]), &parsedJSON)
+			if err == nil {
+				x.Line = line[:i]
+				x.JSON = parsedJSON
+				return x
+			}
+		}
+	}
+	return x
 }

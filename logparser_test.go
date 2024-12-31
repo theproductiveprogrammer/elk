@@ -99,3 +99,18 @@ func TestDateParser(testing *testing.T) {
 	}
 
 }
+
+func TestJsonExtractor(testing *testing.T) {
+	tests := []string{
+		`abc def ghi hkl mno abc def ghi hkl mno abc def ghi hkl mno`,
+		`123 456 789 {"this":"is","json":{"valid":1}}`,
+		`9828823 {"this":"should be ignored"}, but not {"this":"json"}`,
+		`and more strings`,
+		`and more {"json":1,"more":{"json":3},"here":true}`,
+	}
+	for _, test := range tests {
+		xtract := xtractJSON(test)
+		json, _ := json.MarshalIndent(xtract, "", "  ")
+		fmt.Println(string(json))
+	}
+}
