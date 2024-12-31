@@ -59,7 +59,9 @@ func ParseLog(logfile string, transformers []LogTransform) (*Log, error) {
 	}
 	for _, line := range lines {
 		ll := parseLogLine(line)
+
 		if ll.Msg == "" && ll.Src == nil && ll.On == nil && ll.Raw != "" {
+
 			if len(log.lines) > 0 {
 				last := &log.lines[len(log.lines)-1]
 				last.Msg += "\n" + ll.Raw
@@ -68,6 +70,17 @@ func ParseLog(logfile string, transformers []LogTransform) (*Log, error) {
 				ll.Msg = ll.Raw
 				log.lines = append(log.lines, ll)
 			}
+
+		} else if len(log.lines) > 0 {
+
+			last := &log.lines[len(log.lines)-1]
+			if (ll.On == nil && ll.Level == nil) && (last.On != nil || last.Level != nil) {
+				last.Msg += "\n" + ll.Raw
+				last.Raw += "\n" + ll.Raw
+			} else {
+				log.lines = append(log.lines, ll)
+			}
+
 		} else {
 			log.lines = append(log.lines, ll)
 		}
