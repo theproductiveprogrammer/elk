@@ -51,9 +51,9 @@ export default function SitePage() {
 			<table className="mx-2">
 				<thead>
 					<tr>
-						<th>Name</th>
-						<th className="w-64">&nbsp;</th>
-						<th className="w-64">&nbsp;</th>
+						<th className="text-left">Name</th>
+						<th className="min-w-48 text-left">Modified</th>
+						<th className="min-w-24 text-left">Size</th>
 					</tr>
 				</thead>
 				<tbody>
