@@ -73,6 +73,13 @@ func ParseLog(logfile string, transformers []LogTransform) (*Log, error) {
 		}
 	}
 
+	for i := 0; i < len(log.lines); i++ {
+		ll := &log.lines[i]
+		xtract := xtractJSON(ll.Msg)
+		ll.Msg = xtract.Line
+		ll.JSON = xtract.JSON
+	}
+
 	return &log, transformerError
 }
 
