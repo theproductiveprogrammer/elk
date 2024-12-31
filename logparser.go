@@ -83,10 +83,7 @@ func parseLogLine(line string) LogLine {
 
 		}
 
-		if len(tokens) > 0 &&
-			len(tokens[0]) == 1 &&
-			!unicode.IsLetter(rune(tokens[0][0])) && !unicode.IsNumber(rune(tokens[0][0])) {
-
+		if len(tokens) > 0 && isSpecialChar(tokens[0]) {
 			tokens = tokens[1:]
 			eaten += 2
 			continue
@@ -106,10 +103,31 @@ func parseLogLine(line string) LogLine {
 		if ll.Level == nil {
 			var v *string
 			var eaten_ int
-			v, tokens, eaten_ = popLevel(tokens)
+			var pos int
+			v, tokens, eaten_, pos = popLevel(tokens, ll.On == nil)
 			eaten += eaten_
 			ll.Level = v
 			if ll.Level != nil {
+				if pos > 0 {
+					tkns := []string{}
+					for _, tkn := range tokens[:pos] {
+						if !isSpecialChar(tkn) {
+							tkns = append(tkns, tkn)
+							eaten += len(tkn) + 1
+							src_count++
+						} else {
+							eaten += 2
+						}
+					}
+					src := strings.Join(tkns, " ")
+					if ll.Src == nil {
+						ll.Src = &src
+					} else {
+						s := (*ll.Src) + " " + src
+						ll.Src = &s
+					}
+					tokens = tokens[pos:]
+				}
 				continue
 			}
 		}
@@ -131,9 +149,7 @@ func parseLogLine(line string) LogLine {
 			}
 		}
 
-		xtract := xtractJSON(line[eaten:])
-		ll.Msg = xtract.Line
-		ll.JSON = xtract.JSON
+		ll.Msg = line[eaten:]
 
 		return ll
 
@@ -195,17 +211,24 @@ func isSource(token string) bool {
 	return false
 }
 
-func popLevel(tokens []string) (*string, []string, int) {
+func popLevel(tokens []string, onlyfirst bool) (*string, []string, int, int) {
 	levels := []string{"ERROR", "WARN", "DEBUG", "INFO", "TRACE", "INF", "ERR"}
 	if len(tokens) == 0 {
-		return nil, tokens, 0
+		return nil, tokens, 0, 0
+	}
+	lookahead := 3
+	if onlyfirst {
+		lookahead = 1
 	}
 	for _, v := range levels {
-		if v == tokens[0] {
-			return &tokens[0], tokens[1:], len(tokens[0]) + 1
+		for i := 0; i < lookahead; i++ {
+
+			if v == tokens[i] {
+				return &v, append(tokens[:i], tokens[i+1:]...), len(v) + 1, i
+			}
 		}
 	}
-	return nil, tokens, 0
+	return nil, tokens, 0, 0
 }
 
 var cleanRx *regexp.Regexp = regexp.MustCompile("[^0-9:]")
@@ -371,4 +394,9 @@ func xtractJSON(line string) JsonX {
 		}
 	}
 	return x
+}
+
+func isSpecialChar(s string) bool {
+	return len(s) == 1 &&
+		!unicode.IsLetter(rune(s[0])) && !unicode.IsNumber(rune(s[0]))
 }
