@@ -135,4 +135,5 @@ Caused by: java.lang.reflect.InvocationTargetException: null
 	at java.base/java.lang.reflect.Constructor.newInstance(Constructor.java:480)
 	at org.apache.wicket.session.DefaultPageFactory.newPage(DefaultPageFactory.java:171)
 	... 49 common frames omitted
-
+2024-12-30 04:26:55,377 11105309 [qtp466002798-105] WARN  com.r2.ui.Login - Error: during login test
+2024-12-30 04:26:55,377 11105309 [qtp466002798-105] WARN  com.r2.ui.Login - Error during login test: 87

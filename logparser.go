@@ -23,6 +23,7 @@ type LogLine struct {
 	Src   *string         `json:"src"`
 	Msg   string          `json:msg""`
 	JSON  json.RawMessage `json:"json"`
+	Stack []string        `json:"stack"`
 	Raw   string          `json:"raw"`
 }
 
@@ -65,10 +66,9 @@ func ParseLog(logfile string, transformers []LogTransform) (*Log, error) {
 
 			if len(log.lines) > 0 {
 				last := &log.lines[len(log.lines)-1]
-				last.Msg += "\n" + ll.Raw
-				last.Raw += "\n" + ll.Raw
+				addOverflowLine(&ll, last)
 			} else {
-				ll.Msg = ll.Raw
+				addOverflowLine(&ll, &ll)
 				log.lines = append(log.lines, ll)
 			}
 
@@ -76,8 +76,7 @@ func ParseLog(logfile string, transformers []LogTransform) (*Log, error) {
 
 			last := &log.lines[len(log.lines)-1]
 			if (ll.On == nil && ll.Level == nil) && (last.On != nil || last.Level != nil) {
-				last.Msg += "\n" + ll.Raw
-				last.Raw += "\n" + ll.Raw
+				addOverflowLine(&ll, last)
 			} else {
 				log.lines = append(log.lines, ll)
 			}
@@ -96,6 +95,43 @@ func ParseLog(logfile string, transformers []LogTransform) (*Log, error) {
 	}
 
 	return &log, transformerError
+}
+
+func addOverflowLine(fromLL *LogLine, toLL *LogLine) {
+	if len(toLL.Stack) > 0 || isStackLine(fromLL.Raw) {
+		toLL.Stack = append(toLL.Stack, fromLL.Raw)
+		return
+	}
+
+	if fromLL == toLL {
+		return
+	}
+
+	if len(toLL.Msg) > 0 {
+		toLL.Msg += "\n" + fromLL.Raw
+	} else {
+		toLL.Msg = fromLL.Raw
+	}
+	toLL.Raw += "\n" + fromLL.Raw
+}
+
+var stackRxx []*regexp.Regexp = []*regexp.Regexp{
+	regexp.MustCompile(`[.][A-Za-z0-9]*Exception:`),
+	regexp.MustCompile(`^\t+at\s`),
+	regexp.MustCompile(`^\s*Exception in`),
+	regexp.MustCompile(`^\s*Exception:`),
+	regexp.MustCompile(`^\s*Traceback\s`),
+	regexp.MustCompile(`^\s*Error\s.*:`),
+	regexp.MustCompile(`^\s*error\s.*:`),
+}
+
+func isStackLine(msg string) bool {
+	for _, rx := range stackRxx {
+		if rx.MatchString(msg) {
+			return true
+		}
+	}
+	return false
 }
 
 var splitRx *regexp.Regexp = regexp.MustCompile(`\s`)
