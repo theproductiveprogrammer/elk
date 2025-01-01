@@ -17,6 +17,7 @@ type Log struct {
 }
 
 type LogLine struct {
+	Num   int             `json:"num"`
 	Level *string         `json:"level"`
 	On    *time.Time      `json:"on"`
 	Src   *string         `json:"src"`
@@ -88,6 +89,7 @@ func ParseLog(logfile string, transformers []LogTransform) (*Log, error) {
 
 	for i := 0; i < len(log.lines); i++ {
 		ll := &log.lines[i]
+		ll.Num = i + 1
 		xtract := xtractJSON(ll.Msg)
 		ll.Msg = xtract.Line
 		ll.JSON = xtract.JSON
