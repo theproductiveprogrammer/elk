@@ -453,18 +453,50 @@ func xtractJSON(line string) jsonX {
 		return x
 	}
 	line = strings.TrimSpace(line)
-	if !strings.HasSuffix(line, "}") && !strings.HasSuffix(line, "]") {
+	var startRune rune = rune(0)
+	if strings.HasSuffix(line, "}") {
+		startRune = '{'
+	}
+	if strings.HasSuffix(line, "]") {
+		startRune = '['
+	}
+	if strings.HasSuffix(line, "\"") {
+		startRune = '"'
+	}
+	if startRune == rune(0) {
 		x.Line = line
 		return x
 	}
 	for i, c := range line {
-		if c == '{' || c == '[' {
-			var parsedJSON json.RawMessage
-			err := json.Unmarshal([]byte(line[i:]), &parsedJSON)
-			if err == nil {
-				x.Line = line[:i]
-				x.JSON = parsedJSON
-				return x
+		if c == startRune {
+
+			if c == '"' {
+				var asString string
+				err := json.Unmarshal([]byte(line[i:]), &asString)
+				if err == nil {
+
+					var parsedJSON json.RawMessage
+					err = json.Unmarshal([]byte(asString), &parsedJSON)
+					if err == nil {
+						x.Line = line[:i]
+						x.JSON = parsedJSON
+						return x
+					} else {
+						json.Unmarshal([]byte(line[i:]), &parsedJSON)
+						x.Line = line[:i]
+						x.JSON = parsedJSON
+					}
+
+				}
+			} else {
+
+				var parsedJSON json.RawMessage
+				err := json.Unmarshal([]byte(line[i:]), &parsedJSON)
+				if err == nil {
+					x.Line = line[:i]
+					x.JSON = parsedJSON
+					return x
+				}
 			}
 		}
 	}
