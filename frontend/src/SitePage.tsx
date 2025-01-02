@@ -1,12 +1,14 @@
-import { useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import useViewStore from "./stores/viewStore";
 import { main } from "../wailsjs/go/models";
 import { loadFileInfos } from "./FTPHandler";
 import Loader from "./Loader";
+import { filter_In } from "./stores/appStore";
 
 export default function SitePage() {
 	const { currSite, setCurrSite, showLogFile } = useViewStore();
 	const [loading, setLoading] = useState(false);
+	const [filterIn, setFilterIn] = useState("");
 
 	useEffect(() => {
 		if (currSite) refresh();
@@ -46,11 +48,18 @@ export default function SitePage() {
 		);
 	}
 
-	const logs = currSite.logs || [];
+	let logs = currSite.logs || [];
+	if (filterIn) {
+		logs = logs.filter((l) => filter_In(filterIn, l.name));
+	}
 
 	return (
 		<div className="w-3/4 h-svh flex flex-col">
-			<Header currSite={currSite} />
+			<Header
+				currSite={currSite}
+				filterIn={filterIn}
+				setFilterIn={setFilterIn}
+			/>
 			<div className="m-2 flex-grow overflow-scroll">
 				<table>
 					<thead>
@@ -81,9 +90,11 @@ export default function SitePage() {
 
 interface HeaderParams {
 	currSite: main.SiteInfo;
+	filterIn?: string;
+	setFilterIn?: Dispatch<SetStateAction<string>>;
 }
 
-function Header({ currSite }: HeaderParams) {
+function Header({ currSite, filterIn, setFilterIn }: HeaderParams) {
 	const { showFTPEditPage } = useViewStore();
 	return (
 		<div className="w-full border-b border-elk-green text-center relative">
@@ -101,6 +112,9 @@ function Header({ currSite }: HeaderParams) {
 					<input
 						type="search"
 						placeholder="filter in"
+						disabled={!setFilterIn}
+						value={filterIn}
+						onChange={(e) => setFilterIn && setFilterIn(e.target.value)}
 						className="text-sm p-0 m-0 rounded-sm border border-gray-300 px-1 w-32 mr-4"
 					/>
 					<input
