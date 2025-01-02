@@ -51,28 +51,30 @@ export default function SitePage() {
 	return (
 		<div className="w-3/4 h-svh flex flex-col">
 			<Header currSite={currSite} />
-			<table className="m-2 flex-grow overflow-scroll">
-				<thead>
-					<tr>
-						<th className="text-left">Name</th>
-						<th className="min-w-48 text-left">Modified</th>
-						<th className="min-w-24 text-left">Size</th>
-					</tr>
-				</thead>
-				<tbody>
-					{logs.map((log) => (
-						<tr
-							key={log.name}
-							className="cursor-pointer hover:underline"
-							onClick={() => showlog(log)}
-						>
-							<td className="text-left">{log.name}</td>
-							<td>{fmtTime(log.time)}</td>
-							<td>{log.size}</td>
+			<div className="m-2 flex-grow overflow-scroll">
+				<table>
+					<thead>
+						<tr>
+							<th className="text-left">Name</th>
+							<th className="min-w-48 text-left">Modified</th>
+							<th className="min-w-24 text-left">Size</th>
 						</tr>
-					))}
-				</tbody>
-			</table>
+					</thead>
+					<tbody>
+						{logs.map((log) => (
+							<tr
+								key={log.name}
+								className="cursor-pointer hover:underline"
+								onClick={() => showlog(log)}
+							>
+								<td className="text-left">{log.name}</td>
+								<td>{fmtTime(log.time)}</td>
+								<td>{log.size}</td>
+							</tr>
+						))}
+					</tbody>
+				</table>
+			</div>
 		</div>
 	);
 }
