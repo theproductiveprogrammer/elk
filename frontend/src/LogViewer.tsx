@@ -9,14 +9,29 @@ export default function LogViewer() {
 	const [loading, setLoading] = useState(false);
 
 	useEffect(() => {
-		(async function () {
-			if (!currSite || !currFile) return;
-			setLoading(true);
-			const data = await downloadLog(currSite, currFile);
-			setData(data);
-			setLoading(false);
-		})();
+		let lastFetched = 0;
+		let fetching = false;
+		const timer = setInterval(() => {
+			if (fetching || Date.now() - lastFetched < 10 * 1000) return;
+			fetching = true;
+			getLatestLog(lastFetched === 0)
+				.then(() => {
+					fetching = false;
+					lastFetched = Date.now();
+				})
+				.catch((err) => console.error(err));
+		}, 1000);
+
+		return () => clearInterval(timer);
 	}, [currFile]);
+
+	async function getLatestLog(initial: boolean) {
+		if (!currSite || !currFile) return;
+		if (initial) setLoading(true);
+		const data = await downloadLog(currSite.name, currFile.name);
+		setData(data);
+		if (initial) setLoading(false);
+	}
 
 	if (!currFile || !currSite) return <div>UNEXPECTED ERROR: 8989898</div>;
 

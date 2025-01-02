@@ -7,26 +7,7 @@ import {
 } from "../wailsjs/go/main/App";
 
 import { main } from "../wailsjs/go/models";
-
-let downloadingLog = false;
-export async function downloadLog(
-	site: main.SiteInfo,
-	log: main.FTPEntry
-): Promise<string> {
-	while (downloadingLog) {
-		await new Promise((resolve) => setTimeout(resolve, 500));
-	}
-	downloadingLog = true;
-
-	try {
-		const data = await DownloadLog(site, log);
-		downloadingLog = false;
-		return data;
-	} catch (err) {
-		downloadingLog = false;
-		throw err;
-	}
-}
+import { LogError, LogInfo, LogWarning } from "./logger";
 
 interface FetchInfo {
 	fetching: boolean;
@@ -81,6 +62,33 @@ export async function loadFTPInfos(): Promise<main.SiteInfo[]> {
 	return ret;
 }
 
+let downloadingLog = false;
+export async function downloadLog(
+	sitename: string,
+	logname: string
+): Promise<string> {
+	while (downloadingLog) {
+		await new Promise((resolve) => setTimeout(resolve, 500));
+	}
+	downloadingLog = true;
+
+	try {
+		const cached = CACHE[sitename];
+		if (!cached) {
+			throw `Failed to get site info for: "${sitename}"`;
+		}
+		cached.fi.fileInfo.at = 0;
+		const log = cached.site.logs.filter((log) => log.name === logname)[0];
+		if (!log) throw `UNEXPECTED ERROR: 77778 ${logname} info not found`;
+		const data = await DownloadLog(cached.site, log);
+		downloadingLog = false;
+		return data;
+	} catch (err) {
+		downloadingLog = false;
+		throw err;
+	}
+}
+
 const FETCH_CYCLE_TIME = 40 * 1000;
 const FETCH_ERR_CYCLE_TIME = 120 * 1000;
 const WAIT_TIME = 500;
@@ -105,15 +113,14 @@ async function bgLoadFileInfos(name: string) {
 	if (entry.site.error && s - entry.fi.fileInfo.at < FETCH_ERR_CYCLE_TIME)
 		return;
 	if (s - entry.fi.fileInfo.at < FETCH_CYCLE_TIME) return;
-	console.log(`loading file info for: ${name}`);
 	entry.fi.fileInfo.fetching = true;
 	entry.site = await GetFileInfos(entry.site.ftpConfig);
 	entry.fi.fileInfo.at = Date.now();
 	entry.fi.fileInfo.fetching = false;
 	if (entry.site.error) {
-		console.warn(`error loading ${name}`, entry.site.error);
+		LogWarning(`error loading ${name}: ${entry.site.error}`);
 	} else {
-		console.log(
+		LogInfo(
 			`loaded file info for: ${name} in ${Math.round((entry.fi.fileInfo.at - s) / 1000)}s`
 		);
 	}
@@ -130,17 +137,19 @@ async function bgDownload(name: string) {
 
 	const s = Date.now();
 	if (s - entry.fi.fileData.at < FETCH_CYCLE_TIME) return;
-	console.log(`downloading files for: ${name}`);
-	console.log({ entry });
+	LogInfo(`downloading files for: ${name}`);
 	entry.fi.fileData.fetching = true;
 	const errors = await DownloadLogs(entry.site);
 	entry.fi.fileData.at = Date.now();
 	entry.fi.fileData.fetching = false;
 	if (errors && errors.length) {
-		console.error(`Failed downloading files in ${name}`);
-		errors.forEach((err) => console.error(err));
+		LogError(`Failed downloading files in ${name}`);
+		errors.forEach((err) => {
+			if (err.toString) LogError(err.toString());
+			else LogError(JSON.stringify(err));
+		});
 	} else {
-		console.log(
+		LogInfo(
 			`downloaded files for: ${name} in ${Math.round((entry.fi.fileInfo.at - s) / 1000)}s`
 		);
 	}

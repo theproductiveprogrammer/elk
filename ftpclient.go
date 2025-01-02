@@ -276,7 +276,7 @@ func (a *App) DownloadLogs(site SiteInfo) []error {
 	return errors
 }
 
-func (a *App) DownloadLog(site SiteInfo, file FTPEntry) (string, error) {
+func (a *App) DownloadLog(site SiteInfo, file *FTPEntry) (string, error) {
 	runtime.LogInfo(a.ctx, fmt.Sprintf("DownloadLog: %s", file.Name))
 
 	homeDir, err := os.UserHomeDir()
@@ -306,7 +306,7 @@ func (a *App) DownloadLog(site SiteInfo, file FTPEntry) (string, error) {
 	}
 
 	if since.Hours() < 24 && localSize >= file.Size {
-		runtime.LogInfo(a.ctx, fmt.Sprintf("File %s already exists and size matches. No need to fetch...", file.Name))
+		runtime.LogInfo(a.ctx, fmt.Sprintf("File %s already exists and size fine (%d >= %d). No need to fetch...", file.Name, localSize, file.Size))
 		return readFile(localPath)
 	}
 
