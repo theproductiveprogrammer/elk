@@ -95,6 +95,14 @@ func entryFrom(ftpEntry *ftp.Entry) FTPEntry {
 }
 
 func (a *App) getFileInfos(config FTPConfig) ([]FTPEntry, error) {
+	var err error
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("unexpected error occurred while fetching file infos: %v", r)
+			runtime.LogError(a.ctx, err.Error())
+		}
+	}()
+
 	runtime.LogInfo(a.ctx, fmt.Sprintf("FileInfos: %s", config.Name))
 
 	conn, err := a.getOrCreateConnection(config)
@@ -150,6 +158,14 @@ func (a *App) GetFileInfos(config FTPConfig) SiteInfo {
 }
 
 func (a *App) DownloadLog(site SiteInfo, file *FTPEntry) (*Log, error) {
+	var err error
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("unexpected error occurred while fetching file infos: %v", r)
+			runtime.LogError(a.ctx, err.Error())
+		}
+	}()
+
 	runtime.LogInfo(a.ctx, fmt.Sprintf("DownloadLog: %s", file.Name))
 
 	homeDir, err := os.UserHomeDir()
