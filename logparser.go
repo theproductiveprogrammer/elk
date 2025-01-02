@@ -41,7 +41,7 @@ type CompiledTransformer struct {
 	Replace   string
 }
 
-type JsonX struct {
+type jsonX struct {
 	Line string          `json:"line"`
 	JSON json.RawMessage `json:"json"`
 }
@@ -447,8 +447,8 @@ func applyTransformer(transformer *CompiledTransformer, name string, lines []str
 	return ret
 }
 
-func xtractJSON(line string) JsonX {
-	x := JsonX{}
+func xtractJSON(line string) jsonX {
+	x := jsonX{}
 	if len(line) == 0 {
 		return x
 	}

@@ -10,10 +10,6 @@ export function DownloadLog(arg1, arg2) {
   return window['go']['main']['App']['DownloadLog'](arg1, arg2);
 }
 
-export function DownloadLogs(arg1) {
-  return window['go']['main']['App']['DownloadLogs'](arg1);
-}
-
 export function GetFTPConfig(arg1) {
   return window['go']['main']['App']['GetFTPConfig'](arg1);
 }

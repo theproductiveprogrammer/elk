@@ -2,12 +2,11 @@ import {
 	GetFTPConfig,
 	ListFTPConfigs,
 	GetFileInfos,
-	DownloadLogs,
 	DownloadLog,
 } from "../wailsjs/go/main/App";
 
 import { main } from "../wailsjs/go/models";
-import { LogError, LogInfo, LogWarning } from "./logger";
+import { LogInfo, LogWarning } from "./logger";
 
 interface FetchInfo {
 	fetching: boolean;
@@ -126,35 +125,6 @@ async function bgLoadFileInfos(name: string) {
 	}
 }
 
-function backgroundDownload() {
-	Object.keys(CACHE).forEach(bgDownload);
-}
-async function bgDownload(name: string) {
-	const entry = CACHE[name];
-	if (entry.site.error) return;
-
-	if (entry.fi.fileData.fetching) return;
-
-	const s = Date.now();
-	if (s - entry.fi.fileData.at < FETCH_CYCLE_TIME) return;
-	LogInfo(`downloading files for: ${name}`);
-	entry.fi.fileData.fetching = true;
-	const errors = await DownloadLogs(entry.site);
-	entry.fi.fileData.at = Date.now();
-	entry.fi.fileData.fetching = false;
-	if (errors && errors.length) {
-		LogError(`Failed downloading files in ${name}`);
-		errors.forEach((err) => {
-			if (err.toString) LogError(err.toString());
-			else LogError(JSON.stringify(err));
-		});
-	} else {
-		LogInfo(
-			`downloaded files for: ${name} in ${Math.round((entry.fi.fileInfo.at - s) / 1000)}s`
-		);
-	}
-}
-
 async function backgroundLoad() {
 	while (true) {
 		const keys = Object.keys(CACHE);
@@ -164,7 +134,6 @@ async function backgroundLoad() {
 		}
 		await new Promise((resolve) => setTimeout(resolve, WAIT_TIME));
 		backgroundLoadFileInfos();
-		if (0) backgroundDownload();
 	}
 }
 backgroundLoad();
