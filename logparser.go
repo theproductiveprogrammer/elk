@@ -452,12 +452,13 @@ func xtractJSON(line string) jsonX {
 	if len(line) == 0 {
 		return x
 	}
-	if !strings.HasSuffix(line, "}") {
+	line = strings.TrimSpace(line)
+	if !strings.HasSuffix(line, "}") && !strings.HasSuffix(line, "]") {
 		x.Line = line
 		return x
 	}
 	for i, c := range line {
-		if c == '{' {
+		if c == '{' || c == '[' {
 			var parsedJSON json.RawMessage
 			err := json.Unmarshal([]byte(line[i:]), &parsedJSON)
 			if err == nil {
