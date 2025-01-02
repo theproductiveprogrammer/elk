@@ -107,29 +107,15 @@ function Header({ currSite, filterIn, setFilterIn }: HeaderParams) {
 					edit
 				</span>
 			</div>
-			<div className="flex flex-row justify-between items-center m-2 mb-3">
-				<div>
-					<input
-						type="search"
-						placeholder="filter in"
-						disabled={!setFilterIn}
-						value={filterIn}
-						onChange={(e) => setFilterIn && setFilterIn(e.target.value)}
-						className="text-sm p-0 m-0 rounded-sm border border-gray-300 px-1 w-32 mr-4"
-					/>
-					<input
-						type="search"
-						placeholder="filter out"
-						className="text-sm p-0 m-0 rounded-sm border border-gray-300 px-1 w-32"
-					/>
-				</div>
-				<div>
-					<input
-						type="search"
-						placeholder="find"
-						className="text-sm p-0 m-0 rounded-sm border border-gray-300 px-1"
-					/>
-				</div>
+			<div className="flex flex-row justify-end items-center mt-2 mb-3">
+				<input
+					type="search"
+					placeholder="filter"
+					disabled={!setFilterIn}
+					value={filterIn}
+					onChange={(e) => setFilterIn && setFilterIn(e.target.value)}
+					className="text-sm p-0 m-0 rounded-sm border border-gray-300 px-1 w-64 mr-2"
+				/>
 			</div>
 		</div>
 	);
