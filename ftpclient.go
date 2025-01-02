@@ -149,14 +149,14 @@ func (a *App) GetFileInfos(config FTPConfig) SiteInfo {
 	return site
 }
 
-func (a *App) DownloadLog(site SiteInfo, file *FTPEntry) (string, error) {
+func (a *App) DownloadLog(site SiteInfo, file *FTPEntry) (*Log, error) {
 	runtime.LogInfo(a.ctx, fmt.Sprintf("DownloadLog: %s", file.Name))
 
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		err = fmt.Errorf("failed to get home directory: %w", err)
 		runtime.LogError(a.ctx, err.Error())
-		return "", err
+		return nil, err
 	}
 
 	appDataPath := filepath.Join(homeDir, "elkdata", site.Name, "logs")
@@ -164,7 +164,7 @@ func (a *App) DownloadLog(site SiteInfo, file *FTPEntry) (string, error) {
 	if err != nil {
 		err = fmt.Errorf("failed to create logs directory: %w", err)
 		runtime.LogError(a.ctx, err.Error())
-		return "", err
+		return nil, err
 	}
 
 	localPath := filepath.Join(appDataPath, file.Name)
@@ -180,14 +180,14 @@ func (a *App) DownloadLog(site SiteInfo, file *FTPEntry) (string, error) {
 
 	if since.Hours() < 24 && localSize >= file.Size {
 		runtime.LogInfo(a.ctx, fmt.Sprintf("File %s already exists and size fine (%d >= %d). No need to fetch...", file.Name, localSize, file.Size))
-		return readFile(localPath)
+		return ParseLog(localPath, nil)
 	}
 
 	conn, err := a.getConnection(site.Config)
 	if err != nil {
 		err = fmt.Errorf("failed to connect to FTP server: %w", err)
 		runtime.LogError(a.ctx, err.Error())
-		return "", err
+		return nil, err
 	}
 	defer conn.Quit()
 
@@ -197,23 +197,23 @@ func (a *App) DownloadLog(site SiteInfo, file *FTPEntry) (string, error) {
 
 		localFile, err := os.OpenFile(localPath, os.O_APPEND|os.O_WRONLY, os.ModePerm)
 		if err != nil {
-			return "", fmt.Errorf("failed to open local file %s: %w", localPath, err)
+			return nil, fmt.Errorf("failed to open local file %s: %w", localPath, err)
 		}
 		defer localFile.Close()
 
 		r, err := conn.RetrFrom(file.Name, localSize)
 		if err != nil {
-			return "", fmt.Errorf("failed to download part for file %s: %w", file.Name, err)
+			return nil, fmt.Errorf("failed to download part for file %s: %w", file.Name, err)
 		}
 		defer r.Close()
 
 		_, err = localFile.ReadFrom(r)
 		if err != nil {
-			return "", fmt.Errorf("failed to append to file %s: %w", localPath, err)
+			return nil, fmt.Errorf("failed to append to file %s: %w", localPath, err)
 		}
 
 		runtime.LogInfo(a.ctx, fmt.Sprintf("Completed part download for file %s successfully", file.Name))
-		return readFile(localPath)
+		return ParseLog(localPath, nil)
 
 	} else {
 
@@ -222,7 +222,7 @@ func (a *App) DownloadLog(site SiteInfo, file *FTPEntry) (string, error) {
 		if err != nil {
 			err = fmt.Errorf("failed to download file %s: %w", file.Name, err)
 			runtime.LogError(a.ctx, err.Error())
-			return "", err
+			return nil, err
 		}
 		defer r.Close()
 
@@ -230,7 +230,7 @@ func (a *App) DownloadLog(site SiteInfo, file *FTPEntry) (string, error) {
 		if err != nil {
 			err = fmt.Errorf("failed to create local file %s: %w", localPath, err)
 			runtime.LogError(a.ctx, err.Error())
-			return "", err
+			return nil, err
 		}
 		defer localFile.Close()
 
@@ -238,18 +238,10 @@ func (a *App) DownloadLog(site SiteInfo, file *FTPEntry) (string, error) {
 		if err != nil {
 			err = fmt.Errorf("failed to save file %s: %w", localPath, err)
 			runtime.LogError(a.ctx, err.Error())
-			return "", err
+			return nil, err
 		}
 
 		runtime.LogInfo(a.ctx, fmt.Sprintf("Downloaded file %s successfully", file.Name))
-		return readFile(localPath)
+		return ParseLog(localPath, nil)
 	}
-}
-
-func readFile(p string) (string, error) {
-	data, err := os.ReadFile(p)
-	if err != nil {
-		return "", err
-	}
-	return string(data), nil
 }

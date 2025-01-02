@@ -12,16 +12,16 @@ import (
 )
 
 type Log struct {
-	name  string
-	lines []LogLine
+	Name  string    `json:"name"`
+	Lines []LogLine `json:"lines"`
 }
 
 type LogLine struct {
 	Num   int             `json:"num"`
 	Level *string         `json:"level"`
-	On    *time.Time      `json:"on"`
+	On    *time.Time      `json:"on_str"` // time gets converted to ISO string
 	Src   *string         `json:"src"`
-	Msg   string          `json:msg""`
+	Msg   string          `json:"msg"`
 	JSON  json.RawMessage `json:"json"`
 	Stack []string        `json:"stack"`
 	Raw   string          `json:"raw"`
@@ -56,38 +56,38 @@ func ParseLog(logfile string, transformers []LogTransform) (*Log, error) {
 	lines, transformerError := applyTransformers(transformers, name, lines)
 
 	log := Log{
-		name:  name,
-		lines: []LogLine{},
+		Name:  name,
+		Lines: []LogLine{},
 	}
 	for _, line := range lines {
 		ll := parseLogLine(line)
 
 		if ll.Msg == "" && ll.Src == nil && ll.On == nil && ll.Raw != "" {
 
-			if len(log.lines) > 0 {
-				last := &log.lines[len(log.lines)-1]
+			if len(log.Lines) > 0 {
+				last := &log.Lines[len(log.Lines)-1]
 				addOverflowLine(&ll, last)
 			} else {
 				addOverflowLine(&ll, &ll)
-				log.lines = append(log.lines, ll)
+				log.Lines = append(log.Lines, ll)
 			}
 
-		} else if len(log.lines) > 0 {
+		} else if len(log.Lines) > 0 {
 
-			last := &log.lines[len(log.lines)-1]
+			last := &log.Lines[len(log.Lines)-1]
 			if (ll.On == nil && ll.Level == nil) && (last.On != nil || last.Level != nil) {
 				addOverflowLine(&ll, last)
 			} else {
-				log.lines = append(log.lines, ll)
+				log.Lines = append(log.Lines, ll)
 			}
 
 		} else {
-			log.lines = append(log.lines, ll)
+			log.Lines = append(log.Lines, ll)
 		}
 	}
 
-	for i := 0; i < len(log.lines); i++ {
-		ll := &log.lines[i]
+	for i := 0; i < len(log.Lines); i++ {
+		ll := &log.Lines[i]
 		ll.Num = i + 1
 		xtract := xtractJSON(ll.Msg)
 		ll.Msg = xtract.Line

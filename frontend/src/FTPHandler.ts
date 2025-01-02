@@ -65,7 +65,7 @@ let downloadingLog = false;
 export async function downloadLog(
 	sitename: string,
 	logname: string
-): Promise<string> {
+): Promise<main.Log> {
 	while (downloadingLog) {
 		await new Promise((resolve) => setTimeout(resolve, 500));
 	}

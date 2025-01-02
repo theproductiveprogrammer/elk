@@ -46,10 +46,12 @@ export default function SitePage() {
 		);
 	}
 
+	const logs = currSite.logs || [];
+
 	return (
-		<div className="w-3/4 h-svh overflow-scroll">
+		<div className="w-3/4 h-svh flex flex-col">
 			<Header currSite={currSite} />
-			<table className="mx-2">
+			<table className="m-2 flex-grow overflow-scroll">
 				<thead>
 					<tr>
 						<th className="text-left">Name</th>
@@ -58,18 +60,17 @@ export default function SitePage() {
 					</tr>
 				</thead>
 				<tbody>
-					{currSite.logs &&
-						currSite.logs.map((log) => (
-							<tr
-								key={log.name}
-								className="cursor-pointer hover:underline"
-								onClick={() => showlog(log)}
-							>
-								<td className="text-left">{log.name}</td>
-								<td>{fmtTime(log.time)}</td>
-								<td>{log.size}</td>
-							</tr>
-						))}
+					{logs.map((log) => (
+						<tr
+							key={log.name}
+							className="cursor-pointer hover:underline"
+							onClick={() => showlog(log)}
+						>
+							<td className="text-left">{log.name}</td>
+							<td>{fmtTime(log.time)}</td>
+							<td>{log.size}</td>
+						</tr>
+					))}
 				</tbody>
 			</table>
 		</div>
@@ -83,13 +84,36 @@ interface HeaderParams {
 function Header({ currSite }: HeaderParams) {
 	const { showFTPEditPage } = useViewStore();
 	return (
-		<div className="w-full border-b border-elk-green h-9 leading-9 text-center relative">
-			<span className="font-bold">{currSite.name}</span>
-			<div
-				className="inline-block absolute right-0 pr-2 text-xs top-0 pt-2 font-thin text-gray-400 cursor-pointer hover:text-black hover:underline"
-				onClick={() => showFTPEditPage(currSite)}
-			>
-				edit
+		<div className="w-full border-b border-elk-green text-center relative">
+			<div>
+				<span className="font-bold">{currSite.name}</span>
+				<span
+					className="inline-block absolute right-0 pr-2 text-xs top-0 pt-2 font-thin text-gray-400 cursor-pointer hover:text-black hover:underline"
+					onClick={() => showFTPEditPage(currSite)}
+				>
+					edit
+				</span>
+			</div>
+			<div className="flex flex-row justify-between items-center m-2 mb-3">
+				<div>
+					<input
+						type="search"
+						placeholder="filter in"
+						className="text-sm p-0 m-0 rounded-sm border border-gray-300 px-1 w-32 mr-4"
+					/>
+					<input
+						type="search"
+						placeholder="filter out"
+						className="text-sm p-0 m-0 rounded-sm border border-gray-300 px-1 w-32"
+					/>
+				</div>
+				<div>
+					<input
+						type="search"
+						placeholder="find"
+						className="text-sm p-0 m-0 rounded-sm border border-gray-300 px-1"
+					/>
+				</div>
 			</div>
 		</div>
 	);
