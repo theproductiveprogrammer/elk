@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import useViewStore from "./stores/viewStore";
 import { main } from "../wailsjs/go/models";
 import { downloadLog } from "./FTPHandler";
 import Loader from "./Loader";
+import clsx from "clsx";
 
 class LogLine_ extends main.LogLine {
 	on?: Date;
@@ -16,6 +17,7 @@ export default function LogViewer() {
 	const { currSite, currFile } = useViewStore();
 	const [log, setLog] = useState<main.Log | null>(null);
 	const [loading, setLoading] = useState(false);
+	const [filterIn, setFilterIn] = useState("");
 
 	useEffect(() => {
 		let lastFetched = 0;
@@ -92,7 +94,12 @@ export default function LogViewer() {
 
 	return (
 		<div className="w-3/4 h-svh overflow-scroll flex flex-col">
-			<Header currSite={currSite} currFile={currFile} />
+			<Header
+				currSite={currSite}
+				currFile={currFile}
+				filterIn={filterIn}
+				setFilterIn={setFilterIn}
+			/>
 			<div className="overflow-scroll flex-grow">
 				{dispLines.map((d) => (
 					<ShowLogLine data={d} />
@@ -121,18 +128,59 @@ interface ShowLogLineParams {
 }
 
 function ShowLogLine({ data }: ShowLogLineParams) {
+	const [raw, setRaw] = useState(false);
 	if (data.type === "day") {
-		return <div className="text-center text-xs font-bold">{data.day}</div>;
+		return <div className="text-center text-xs font-bold m-2">{data.day}</div>;
 	}
+
+	if (raw) {
+		return (
+			<div
+				onDoubleClick={() => setRaw((r) => !r)}
+				className="whitespace-pre-wrap font-mono text-sm"
+			>
+				{data.line.raw}
+			</div>
+		);
+	}
+
+	function colorOf(level?: string): string {
+		switch (stdLevel(level)) {
+			case "T":
+				return "text-gray-500";
+			case "D":
+				return "text-gray-600";
+			case "I":
+				return "text-gray-800";
+			case "W":
+				return "text-orange-700";
+			case "E":
+				return "text-red-600";
+			default:
+				return "text-blue-500";
+		}
+	}
+
 	return (
-		<div>
-			<div className="flex flex-row items-baseline">
-				<div className="text-xxs w-12 text-gray-600">{data.after}</div>
-				<div className="text-xxs text-gray-400 mr-1 hover:text-gray-800 cursor-pointer">
-					▶
+		<div onDoubleClick={() => setRaw((r) => !r)}>
+			<div className="my-2 grid grid-cols-logview">
+				<div>
+					<span className="inline-block text-xxs w-10 text-gray-400">
+						{data.after}
+					</span>
 				</div>
-				<div className="text-xs mr-3">{data.tm}:</div>
-				<div className="">{data.line.msg}</div>
+				<div className="w-full">
+					<span className="text-xs text-gray-400 mr-1">{data.tm}</span>
+					<span
+						className={clsx(
+							"text-xxs text-gray-300 mr-2 hover:text-gray-800 cursor-pointer",
+							colorOf(data.line.level)
+						)}
+					>
+						▶
+					</span>
+					<span className={colorOf(data.line.level)}>{data.line.msg}</span>
+				</div>
 			</div>
 		</div>
 	);
@@ -180,15 +228,55 @@ function p2(n: number): string {
 	return "" + n;
 }
 
+type StdLevel = "T" | "D" | "I" | "W" | "E";
+
+function stdLevel(level?: string): StdLevel {
+	if (!level) return "I";
+	if (level[0] === "T" || level[0] === "t") return "T";
+	if (level[0] === "D" || level[0] === "d") return "D";
+	if (level[0] === "I" || level[0] === "i") return "I";
+	if (level[0] === "W" || level[0] === "w") return "W";
+	if (level[0] === "E" || level[0] === "e") return "E";
+	return "I";
+}
+
 interface HeaderParams {
 	currSite: main.SiteInfo;
 	currFile: main.FTPEntry;
+	filterIn?: string;
+	setFilterIn?: Dispatch<SetStateAction<string>>;
 }
-function Header({ currSite, currFile }: HeaderParams) {
+function Header({ currSite, currFile, filterIn, setFilterIn }: HeaderParams) {
 	return (
-		<div className="w-full border-b border-elk-green h-9 leading-9 text-center relative">
-			<span className="">{currSite.name} : </span>
-			<span className="font-bold">{currFile.name}</span>
+		<div className="w-full border-b border-elk-green relative">
+			<div className="text-center">
+				<span className="">{currSite.name} : </span>
+				<span className="font-bold">{currFile.name}</span>
+			</div>
+			<div className="flex flex-row justify-between items-center mx-2 mt-2 mb-3">
+				<div>
+					<input
+						type="search"
+						placeholder="filter in"
+						disabled={!setFilterIn}
+						value={filterIn}
+						onChange={(e) => setFilterIn && setFilterIn(e.target.value)}
+						className="text-sm p-0 m-0 rounded-sm border border-gray-300 px-1 w-32 mr-4"
+					/>
+					<input
+						type="search"
+						placeholder="filter out"
+						className="text-sm p-0 m-0 rounded-sm border border-gray-300 px-1 w-32"
+					/>
+				</div>
+				<div>
+					<input
+						type="search"
+						placeholder="find"
+						className="text-sm p-0 m-0 rounded-sm border border-gray-300 px-1"
+					/>
+				</div>
+			</div>
 		</div>
 	);
 }

@@ -76,7 +76,7 @@ export default function SitePage() {
 								className="cursor-pointer hover:underline"
 								onClick={() => showlog(log)}
 							>
-								<td className="text-left">{log.name}</td>
+								<td className="text-left pr-4">{log.name}</td>
 								<td>{fmtTime(log.time)}</td>
 								<td>{log.size}</td>
 							</tr>

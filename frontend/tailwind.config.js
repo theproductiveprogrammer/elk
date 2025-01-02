@@ -11,7 +11,7 @@ export default {
 			},
 			gridTemplateColumns: {
 				dialog: "repeat(2, 8rem 1fr)",
-				logview: "repeat(2, 8rem 1fr)",
+				logview: "40px 1fr",
 			},
 		},
 	},
