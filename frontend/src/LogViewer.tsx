@@ -147,11 +147,11 @@ function ShowLogLine({ data }: ShowLogLineParams) {
 	function colorOf(level?: string): string {
 		switch (stdLevel(level)) {
 			case "T":
-				return "text-gray-500";
+				return "text-slate-400";
 			case "D":
-				return "text-gray-600";
+				return "text-gray-700";
 			case "I":
-				return "text-gray-800";
+				return "text-gray-700";
 			case "W":
 				return "text-orange-700";
 			case "E":
