@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import useViewStore from "./stores/viewStore";
 import { main } from "../wailsjs/go/models";
 import { loadFileInfos } from "./FTPHandler";
+import Loader from "./Loader";
 
 export default function SitePage() {
 	const { currSite, setCurrSite, showLogFile } = useViewStore();
@@ -30,7 +31,7 @@ export default function SitePage() {
 		return (
 			<div className="w-3/4 h-svh overflow-scroll">
 				<Header currSite={currSite} />
-				<div>Loading...</div>
+				<Loader />
 			</div>
 		);
 	}

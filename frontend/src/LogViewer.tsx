@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import useViewStore from "./stores/viewStore";
 import { main } from "../wailsjs/go/models";
 import { downloadLog } from "./FTPHandler";
+import Loader from "./Loader";
 
 export default function LogViewer() {
 	const { currSite, currFile } = useViewStore();
@@ -10,7 +11,16 @@ export default function LogViewer() {
 
 	useEffect(() => {
 		let lastFetched = 0;
-		let fetching = false;
+		let fetching = true;
+		getLatestLog(lastFetched === 0)
+			.then(() => {
+				fetching = false;
+				lastFetched = Date.now();
+			})
+			.catch((err) => {
+				fetching = false;
+				console.error(err);
+			});
 		const timer = setInterval(() => {
 			if (fetching || Date.now() - lastFetched < 10 * 1000) return;
 			fetching = true;
@@ -19,7 +29,10 @@ export default function LogViewer() {
 					fetching = false;
 					lastFetched = Date.now();
 				})
-				.catch((err) => console.error(err));
+				.catch((err) => {
+					fetching = false;
+					console.error(err);
+				});
 		}, 1000);
 
 		return () => clearInterval(timer);
@@ -39,7 +52,7 @@ export default function LogViewer() {
 		return (
 			<div className="w-3/4 h-svh overflow-scroll">
 				<Header currSite={currSite} currFile={currFile} />
-				<div>Loading...</div>
+				<Loader />
 			</div>
 		);
 	}
