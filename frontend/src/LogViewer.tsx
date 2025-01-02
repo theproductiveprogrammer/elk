@@ -3,7 +3,6 @@ import useViewStore from "./stores/viewStore";
 import { main } from "../wailsjs/go/models";
 import { downloadLog } from "./FTPHandler";
 import Loader from "./Loader";
-import clsx from "clsx";
 
 class LogLine_ extends main.LogLine {
 	on?: Date;
@@ -170,15 +169,7 @@ function ShowLogLine({ data }: ShowLogLineParams) {
 					</span>
 				</div>
 				<div className="w-full">
-					<span className="text-xs text-gray-400 mr-1">{data.tm}</span>
-					<span
-						className={clsx(
-							"text-xxs text-gray-300 mr-2 hover:text-gray-800 cursor-pointer",
-							colorOf(data.line.level)
-						)}
-					>
-						▶
-					</span>
+					<span className="text-xs text-gray-400 mr-2">{data.tm}</span>
 					<span className={colorOf(data.line.level)}>{data.line.msg}</span>
 				</div>
 			</div>
