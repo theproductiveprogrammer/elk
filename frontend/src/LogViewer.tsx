@@ -76,7 +76,9 @@ export default function LogViewer() {
 		const prev = loglines[i + 1];
 		const curr = loglines[i];
 		const [currDay, currTime] = fmtDay(curr.on);
-		if (prevDay !== currDay) dispLines.push({ type: "day", day: currDay });
+		if (prevDay !== currDay) {
+			dispLines.push({ type: "day", day: currDay, key: curr.num + "-day" });
+		}
 		prevDay = currDay;
 
 		dispLines.push({
@@ -84,6 +86,7 @@ export default function LogViewer() {
 			after: afterTime(curr.on, prev?.on),
 			line: curr,
 			tm: currTime,
+			key: curr.num + "",
 		});
 	}
 
@@ -102,10 +105,12 @@ export default function LogViewer() {
 type ShowLogLineData = L_LogLine | L_DayLine;
 type L_DayLine = {
 	type: "day";
+	key: string;
 	day: string;
 };
 type L_LogLine = {
 	type: "logline";
+	key: string;
 	line: LogLine_;
 	after: string;
 	tm: string;
