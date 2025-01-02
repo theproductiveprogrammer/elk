@@ -26,6 +26,18 @@ export function ListFTPConfigs() {
   return window['go']['main']['App']['ListFTPConfigs']();
 }
 
+export function LogError(arg1) {
+  return window['go']['main']['App']['LogError'](arg1);
+}
+
+export function LogInfo(arg1) {
+  return window['go']['main']['App']['LogInfo'](arg1);
+}
+
+export function LogWarning(arg1) {
+  return window['go']['main']['App']['LogWarning'](arg1);
+}
+
 export function SaveFTPConfig(arg1) {
   return window['go']['main']['App']['SaveFTPConfig'](arg1);
 }
