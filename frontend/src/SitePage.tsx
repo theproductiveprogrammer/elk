@@ -1,7 +1,7 @@
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import useViewStore from "./stores/viewStore";
 import { main } from "../wailsjs/go/models";
-import { loadFileInfos } from "./FTPHandler";
+import { loadFileInfos, loadLocalFileInfos } from "./FTPHandler";
 import Loader from "./Loader";
 import { filter_In } from "./stores/appStore";
 
@@ -17,8 +17,12 @@ export default function SitePage() {
 	async function refresh() {
 		if (!currSite) return;
 		setLoading(true);
+		const localSite = await loadLocalFileInfos(currSite.name);
+		if (localSite && !localSite.error) {
+			setCurrSite(localSite);
+			setLoading(false);
+		}
 		const site = await loadFileInfos(currSite.name);
-		console.log(site);
 		setCurrSite(site);
 		setLoading(false);
 	}

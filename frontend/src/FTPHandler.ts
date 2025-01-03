@@ -2,6 +2,7 @@ import {
 	GetFTPConfig,
 	ListFTPConfigs,
 	GetFileInfos,
+	GetLocalFileInfos,
 	DownloadLog,
 } from "../wailsjs/go/main/App";
 
@@ -86,6 +87,15 @@ export async function downloadLog(
 		downloadingLog = false;
 		throw err;
 	}
+}
+
+export async function loadLocalFileInfos(name: string): Promise<main.SiteInfo> {
+	const entry = CACHE[name];
+	LogInfo(`getting local site info for ${name}`);
+	const localSite = await GetLocalFileInfos(entry.site.ftpConfig);
+	if (!localSite) LogInfo(`Did not get any local site info...`);
+	else LogInfo(`Got local file info ${JSON.stringify(localSite)}`);
+	return localSite;
 }
 
 const FETCH_CYCLE_TIME = 40 * 1000;

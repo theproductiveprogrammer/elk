@@ -10,6 +10,8 @@ export function GetFTPConfig(arg1:string):Promise<main.FTPConfig>;
 
 export function GetFileInfos(arg1:main.FTPConfig):Promise<main.SiteInfo>;
 
+export function GetLocalFileInfos(arg1:main.FTPConfig):Promise<main.SiteInfo>;
+
 export function ListFTPConfigs():Promise<Array<string>>;
 
 export function LogError(arg1:string):Promise<void>;

@@ -18,6 +18,10 @@ export function GetFileInfos(arg1) {
   return window['go']['main']['App']['GetFileInfos'](arg1);
 }
 
+export function GetLocalFileInfos(arg1) {
+  return window['go']['main']['App']['GetLocalFileInfos'](arg1);
+}
+
 export function ListFTPConfigs() {
   return window['go']['main']['App']['ListFTPConfigs']();
 }

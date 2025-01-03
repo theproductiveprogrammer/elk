@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -137,8 +138,79 @@ func (a *App) getFileInfos(config FTPConfig) ([]FTPEntry, error) {
 		return strings.ToUpper(logFiles[i].Name) < strings.ToUpper(logFiles[j].Name)
 	})
 
+	a.saveSiteInfoLocally(logFiles, config)
+
 	runtime.LogInfo(a.ctx, fmt.Sprintf("returning %d logs for %s", len(logFiles), config.Name))
 	return logFiles, nil
+}
+
+func (a *App) saveSiteInfoLocally(files []FTPEntry, config FTPConfig) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		err = fmt.Errorf("failed to get home directory: %w", err)
+		runtime.LogError(a.ctx, err.Error())
+		return
+	}
+
+	siteInfoPath := filepath.Join(homeDir, "elkdata", config.Name, "site.info")
+	file, err := os.Create(siteInfoPath)
+	if err != nil {
+		err = fmt.Errorf("failed to create site info file: %w", err)
+		runtime.LogError(a.ctx, err.Error())
+		return
+	}
+	defer file.Close()
+
+	encoder := json.NewEncoder(file)
+	err = encoder.Encode(files)
+	if err != nil {
+		err = fmt.Errorf("failed to write ftp entries: %w", err)
+		runtime.LogError(a.ctx, err.Error())
+	}
+}
+
+func (a *App) getLocalFileInfos(config FTPConfig) ([]FTPEntry, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		err = fmt.Errorf("failed to get home directory: %w", err)
+		runtime.LogError(a.ctx, err.Error())
+		return nil, err
+	}
+
+	siteInfoPath := filepath.Join(homeDir, "elkdata", config.Name, "site.info")
+	file, err := os.Open(siteInfoPath)
+	if err != nil {
+		err = fmt.Errorf("failed to open site info file: %w", err)
+		runtime.LogError(a.ctx, err.Error())
+		return nil, err
+	}
+	defer file.Close()
+
+	var logs []FTPEntry
+	encoder := json.NewDecoder(file)
+	err = encoder.Decode(&logs)
+	if err != nil {
+		err = fmt.Errorf("failed to load ftp entries: %w", err)
+		runtime.LogError(a.ctx, err.Error())
+		return nil, err
+	}
+	return logs, nil
+}
+
+func (a *App) GetLocalFileInfos(config FTPConfig) SiteInfo {
+	logs, err := a.getLocalFileInfos(config)
+	site := SiteInfo{
+		Name:   config.Name,
+		Config: config,
+		Logs:   []FTPEntry{},
+		Error:  "",
+	}
+	if err != nil {
+		site.Error = err.Error()
+	} else {
+		site.Logs = logs
+	}
+	return site
 }
 
 func (a *App) GetFileInfos(config FTPConfig) SiteInfo {
