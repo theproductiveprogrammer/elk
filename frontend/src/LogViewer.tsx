@@ -16,20 +16,31 @@ class LogLine_ extends main.LogLine {
 	}
 }
 
+const MAX_LOG_LINES = 10_000;
+
 export default function LogViewer() {
 	const { currSite, currFile, handleNewDataLoaded } = useViewStore();
 	const [log, setLog] = useState<main.Log | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [filterIn, setFilterIn] = useState("");
+	const [fromLine, setFromLine] = useState(0);
 
 	useEffect(() => {
 		let lastFetched = 0;
 		let fetching = false;
 		setLoading(true);
+		setFromLine(0);
 		fetchLocalLog(currSite?.name, currFile?.name)
 			.then((log) => {
 				if (!lastFetched) {
 					LogInfo(`fetched local log: ${currFile?.name}`);
+					if (log.lines.length > MAX_LOG_LINES) {
+						const firstlog = log.lines[log.lines.length - MAX_LOG_LINES];
+						setFromLine(firstlog.num);
+					} else {
+						const firstlog = log.lines[log.lines.length - 1];
+						setFromLine(firstlog.num);
+					}
 					setLog(log);
 					lastFetched = 1;
 					setLoading(false);
@@ -92,7 +103,9 @@ export default function LogViewer() {
 
 	const loglines: LogLine_[] = [];
 	log?.lines.forEach((line) => {
-		loglines.push(new LogLine_(line));
+		if (line.num >= fromLine) {
+			loglines.push(new LogLine_(line));
+		}
 	});
 
 	let prevDay: string = "";
