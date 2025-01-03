@@ -279,7 +279,7 @@ func (a *App) DownloadLog(site SiteInfo, file *FTPEntry) (*Log, error) {
 	}
 	defer conn.Quit()
 
-	runtime.LogInfo(a.ctx, fmt.Sprintf("localSize: %d, fileSize: %d, since: %.2f", localSize, file.Size, since.Hours()))
+	runtime.LogInfo(a.ctx, fmt.Sprintf("analyzing %s: localSize: %d, fileSize: %d, since: %.2f", file.Name, localSize, file.Size, since.Hours()))
 	if since.Hours() < 24 && localSize > 1000 {
 		runtime.LogInfo(a.ctx, fmt.Sprintf("Downloading additional part for file %s...", file.Name))
 

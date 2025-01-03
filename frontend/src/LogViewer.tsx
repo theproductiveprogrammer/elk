@@ -68,9 +68,9 @@ export default function LogViewer() {
 	async function getLatestLog(initial: boolean) {
 		if (!currSite || !currFile) return;
 		if (initial) setLoading(true);
-		LogInfo(`getting latest log: ${currSite.name} ${currFile.name}`);
+		LogInfo(`getting latest log ${currSite.name}/${currFile.name}`);
 		const log = await downloadLog(currSite.name, currFile.name);
-		LogInfo(`got latest log: ${currSite.name} ${currFile.name}`);
+		LogInfo(`got latest log: ${currSite.name}/${currFile.name}`);
 		setLog(log);
 		if (initial) setLoading(false);
 	}
