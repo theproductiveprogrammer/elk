@@ -146,8 +146,8 @@ function ShowLogLine({ data }: ShowLogLineParams) {
 	}
 
 	return (
-		<div onDoubleClick={() => setRaw((r) => !r)}>
-			<div className="my-2 grid grid-cols-logview">
+		<div className="my-2" onDoubleClick={() => setRaw((r) => !r)}>
+			<div className="grid grid-cols-logview">
 				<div>
 					<span className="inline-block text-xxs w-10 text-gray-400">
 						{data.after}
@@ -226,7 +226,7 @@ interface StackViewProps {
 function StackView({ stack, className }: StackViewProps) {
 	if (!stack) return <div></div>;
 	return (
-		<div className="my-2 grid grid-cols-logview">
+		<div className="grid grid-cols-logview">
 			{stack.map((l) => (
 				<>
 					<div></div>
