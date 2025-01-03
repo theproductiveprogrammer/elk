@@ -1,10 +1,11 @@
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import useViewStore from "./stores/viewStore";
 import { main } from "../wailsjs/go/models";
-import { downloadLog } from "./FTPHandler";
+import { downloadLog, fetchLocalLog } from "./FTPHandler";
 import Loader from "./Loader";
 import clsx from "clsx";
 import JSON5 from "json5";
+import { LogError, LogInfo, LogWarning } from "./logger";
 
 class LogLine_ extends main.LogLine {
 	on?: Date;
@@ -22,15 +23,29 @@ export default function LogViewer() {
 
 	useEffect(() => {
 		let lastFetched = 0;
-		let fetching = true;
-		getLatestLog(lastFetched === 0)
-			.then(() => {
-				fetching = false;
-				lastFetched = Date.now();
+		let fetching = false;
+		setLoading(true);
+		fetchLocalLog(currSite?.name, currFile?.name)
+			.then((log) => {
+				if (!lastFetched) {
+					LogInfo(`fetched local log: ${currFile?.name}`);
+					setLog(log);
+					lastFetched = 1;
+					setLoading(false);
+				}
 			})
 			.catch((err) => {
-				fetching = false;
-				console.error(err);
+				LogWarning(`failed to fetch local log: ${currFile?.name}`);
+				LogWarning(err);
+				getLatestLog(lastFetched === 0)
+					.then(() => {
+						fetching = false;
+						lastFetched = Date.now();
+					})
+					.catch((err) => {
+						fetching = false;
+						console.error(err);
+					});
 			});
 		const timer = setInterval(() => {
 			if (fetching || Date.now() - lastFetched < 10 * 1000) return;
@@ -43,16 +58,19 @@ export default function LogViewer() {
 				.catch((err) => {
 					fetching = false;
 					console.error(err);
+					LogError(`failed to get latest log`);
 				});
 		}, 1000);
 
 		return () => clearInterval(timer);
-	}, [currFile]);
+	}, [currFile?.name]);
 
 	async function getLatestLog(initial: boolean) {
 		if (!currSite || !currFile) return;
 		if (initial) setLoading(true);
+		LogInfo(`getting latest log: ${currSite.name} ${currFile.name}`);
 		const log = await downloadLog(currSite.name, currFile.name);
+		LogInfo(`got latest log: ${currSite.name} ${currFile.name}`);
 		setLog(log);
 		if (initial) setLoading(false);
 	}

@@ -233,7 +233,7 @@ func (a *App) DownloadLog(site SiteInfo, file *FTPEntry) (*Log, error) {
 	var err error
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("unexpected error occurred while fetching file infos: %v", r)
+			err = fmt.Errorf("unexpected error occurred while downloading log: %v", r)
 			runtime.LogError(a.ctx, err.Error())
 		}
 	}()
@@ -332,4 +332,31 @@ func (a *App) DownloadLog(site SiteInfo, file *FTPEntry) (*Log, error) {
 		runtime.LogInfo(a.ctx, fmt.Sprintf("Downloaded file %s successfully", file.Name))
 		return ParseLog(localPath, nil)
 	}
+}
+
+func (a *App) FetchLocalLog(sitename string, filename string) (*Log, error) {
+	var err error
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("unexpected error occurred while fetching log data: %v", r)
+			runtime.LogError(a.ctx, err.Error())
+		}
+	}()
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		err = fmt.Errorf("failed to get home directory: %w", err)
+		runtime.LogError(a.ctx, err.Error())
+		return nil, err
+	}
+
+	localPath := filepath.Join(homeDir, "elkdata", sitename, "logs", filename)
+	log, err := ParseLog(localPath, nil)
+	if err != nil {
+		err = fmt.Errorf("failed to get local log data for %s: %w", filename, err)
+		runtime.LogError(a.ctx, err.Error())
+		return nil, err
+	}
+	runtime.LogInfo(a.ctx, fmt.Sprintf("returning local data for log %s", filename))
+	return log, nil
 }

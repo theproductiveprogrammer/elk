@@ -6,6 +6,8 @@ export function DeleteFTPConfig(arg1:string):Promise<void>;
 
 export function DownloadLog(arg1:main.SiteInfo,arg2:main.FTPEntry):Promise<main.Log>;
 
+export function FetchLocalLog(arg1:string,arg2:string):Promise<main.Log>;
+
 export function GetFTPConfig(arg1:string):Promise<main.FTPConfig>;
 
 export function GetFileInfos(arg1:main.FTPConfig):Promise<main.SiteInfo>;
