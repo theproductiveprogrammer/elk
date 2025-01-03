@@ -116,10 +116,14 @@ export default function LogViewer() {
 			<Header
 				currSite={currSite}
 				currFile={currFile}
+				dispLines={dispLines}
 				filterIn={filterIn}
 				setFilterIn={setFilterIn}
 			/>
-			<div className="overflow-scroll flex-grow">
+			<div
+				className="overflow-scroll flex-grow relative"
+				id="logviewer_container"
+			>
 				{dispLines.map((d) => (
 					<ShowLogLine data={d} />
 				))}
@@ -147,14 +151,23 @@ interface ShowLogLineParams {
 }
 
 function ShowLogLine({ data }: ShowLogLineParams) {
+	const { setLineRef } = useViewStore();
 	const [raw, setRaw] = useState(false);
 	if (data.type === "day") {
-		return <div className="text-center text-xs font-bold m-2">{data.day}</div>;
+		return (
+			<div
+				ref={(node) => setLineRef(data.key, node)}
+				className="text-center text-xs font-bold m-2"
+			>
+				{data.day}
+			</div>
+		);
 	}
 
 	if (raw) {
 		return (
 			<div
+				ref={(node) => setLineRef(data.key, node)}
 				onDoubleClick={() => setRaw((r) => !r)}
 				className="whitespace-pre-wrap font-mono text-sm"
 			>
@@ -164,7 +177,11 @@ function ShowLogLine({ data }: ShowLogLineParams) {
 	}
 
 	return (
-		<div className="my-2" onDoubleClick={() => setRaw((r) => !r)}>
+		<div
+			ref={(node) => setLineRef(data.key, node)}
+			className="my-2"
+			onDoubleClick={() => setRaw((r) => !r)}
+		>
 			<div className="grid grid-cols-logview">
 				<div>
 					<span className="inline-block text-xxs w-10 text-gray-400">
@@ -367,10 +384,25 @@ function stdLevel(level?: string): StdLevel {
 interface HeaderParams {
 	currSite: main.SiteInfo;
 	currFile: main.FTPEntry;
+	dispLines?: ShowLogLineData[];
 	filterIn?: string;
 	setFilterIn?: Dispatch<SetStateAction<string>>;
 }
-function Header({ currSite, currFile, filterIn, setFilterIn }: HeaderParams) {
+function Header({
+	currSite,
+	currFile,
+	dispLines,
+	filterIn,
+	setFilterIn,
+}: HeaderParams) {
+	const { scrollToLine } = useViewStore();
+
+	function scrollToBottom() {
+		if (!dispLines) return;
+		const lastline = dispLines[dispLines.length - 1];
+		scrollToLine(lastline.key, true);
+	}
+
 	return (
 		<div className="w-full border-b border-elk-green relative">
 			<div className="text-center">
@@ -401,6 +433,18 @@ function Header({ currSite, currFile, filterIn, setFilterIn }: HeaderParams) {
 					/>
 				</div>
 			</div>
+			{dispLines && (
+				<div
+					className="absolute text-xxs opacity-30 cursor-pointer hover:opacity-100 hover:text-blue-800 hover:underline z-20"
+					onClick={() => scrollToBottom()}
+					style={{
+						bottom: "-16px",
+						right: "8px",
+					}}
+				>
+					to bottom
+				</div>
+			)}
 		</div>
 	);
 }
