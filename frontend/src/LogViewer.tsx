@@ -3,6 +3,8 @@ import useViewStore from "./stores/viewStore";
 import { main } from "../wailsjs/go/models";
 import { downloadLog } from "./FTPHandler";
 import Loader from "./Loader";
+import clsx from "clsx";
+import JSON5 from "json5";
 
 class LogLine_ extends main.LogLine {
 	on?: Date;
@@ -143,23 +145,6 @@ function ShowLogLine({ data }: ShowLogLineParams) {
 		);
 	}
 
-	function colorOf(level?: string): string {
-		switch (stdLevel(level)) {
-			case "T":
-				return "text-slate-400";
-			case "D":
-				return "text-gray-700";
-			case "I":
-				return "text-gray-700";
-			case "W":
-				return "text-orange-700";
-			case "E":
-				return "text-red-600";
-			default:
-				return "text-blue-500";
-		}
-	}
-
 	return (
 		<div onDoubleClick={() => setRaw((r) => !r)}>
 			<div className="my-2 grid grid-cols-logview">
@@ -171,10 +156,139 @@ function ShowLogLine({ data }: ShowLogLineParams) {
 				<div className="w-full">
 					<span className="text-xs text-gray-400 mr-2">{data.tm}</span>
 					<span className={colorOf(data.line.level)}>{data.line.msg}</span>
+					<JSONView
+						json={data.line.json}
+						className={colorOf(data.line.level)}
+					/>
 				</div>
 			</div>
+			<StackView stack={data.line.stack} className={colorOf(data.line.level)} />
 		</div>
 	);
+}
+
+function colorOf(level?: string): string {
+	switch (stdLevel(level)) {
+		case "T":
+			return "text-slate-400";
+		case "D":
+			return "text-gray-700";
+		case "I":
+			return "text-gray-700";
+		case "W":
+			return "text-orange-700";
+		case "E":
+			return "text-red-600";
+		default:
+			return "text-blue-500";
+	}
+}
+
+interface JSONViewProps {
+	json: any;
+	className: string;
+}
+function JSONView({ json, className }: JSONViewProps) {
+	const [xpand, setXpand] = useState(false);
+	if (!json) return <span></span>;
+
+	if (xpand) {
+		return (
+			<span
+				onClick={() => setXpand((x) => !x)}
+				className={clsx(
+					"text-xs font-mono whitespace-pre-wrap cursor-pointer",
+					className
+				)}
+			>
+				{JSON5.stringify(json, { space: 1 })}
+			</span>
+		);
+	} else {
+		return (
+			<span
+				onClick={() => setXpand((x) => !x)}
+				className={clsx(
+					"text-xs font-mono whitespace-pre-wrap cursor-pointer",
+					className
+				)}
+			>
+				{JSON5.stringify(json)}
+			</span>
+		);
+	}
+}
+
+interface StackViewProps {
+	stack: string[];
+	className: string;
+}
+function StackView({ stack, className }: StackViewProps) {
+	if (!stack) return <div></div>;
+	return (
+		<div className="my-2 grid grid-cols-logview">
+			{stack.map((l) => (
+				<>
+					<div></div>
+					<div
+						className={clsx(
+							className,
+							is_important_1(l) || "text-xxs opacity-50"
+						)}
+					>
+						{l}
+					</div>
+				</>
+			))}
+		</div>
+	);
+
+	function is_important_1(l: string): boolean {
+		const stdpkgs = [
+			"java.lang.",
+			"java.util.",
+			"java.io.",
+			"javax.servlet.",
+			"javax.swing.",
+			"org.apache.",
+			"org.springframework.",
+			"com.fasterxml.jackson.",
+			"org.hibernate.",
+			"org.jboss.",
+			"org.eclipse.",
+			"org.slf4j.",
+			"ch.qos.logback.",
+			"org.aspectj.",
+			"org.mockito.",
+			"org.junit.",
+			"org.gradle.",
+			"org.maven.",
+			"org.apache.maven.",
+			"org.thymeleaf.",
+			"com.vaadin.",
+			"org.zkoss.",
+			"com.google.gwt.",
+			"javax.persistence.",
+			"com.zaxxer.hikari.",
+			"org.postgresql.",
+			"com.mysql.",
+			"org.apache.http.",
+			"io.netty.",
+			"com.squareup.okhttp3.",
+			"com.amazonaws.",
+			"com.google.cloud.",
+			"org.apache.commons.",
+			"com.google.common.",
+			"org.testng.",
+			"org.apache.kafka.",
+			"io.micronaut.",
+			"io.quarkus.",
+		];
+		for (let i = 0; i < stdpkgs.length; i++) {
+			if (l.indexOf(stdpkgs[i]) !== -1) return false;
+		}
+		return true;
+	}
 }
 
 function afterTime(curr?: Date, prev?: Date): string {
