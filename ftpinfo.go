@@ -3,9 +3,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 type FTPConfig struct {
@@ -19,24 +20,32 @@ type FTPConfig struct {
 func (a *App) SaveFTPConfig(config FTPConfig) error {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		return fmt.Errorf("failed to get home directory: %w", err)
+		err = fmt.Errorf("failed to get home directory: %w", err)
+		runtime.LogError(a.ctx, err.Error())
+		return err
 	}
 	appDataPath := filepath.Join(homeDir, "elkdata", config.Name)
 	err = os.MkdirAll(appDataPath, os.ModePerm)
 	if err != nil {
-		return fmt.Errorf("failed to get create directory: %w", err)
+		err = fmt.Errorf("failed to get create directory: %w", err)
+		runtime.LogError(a.ctx, err.Error())
+		return err
 	}
 	configPath := filepath.Join(appDataPath, "ftpinfo.config")
 	file, err := os.Create(configPath)
 	if err != nil {
-		return fmt.Errorf("failed to create config file: %w", err)
+		err = fmt.Errorf("failed to create config file: %w", err)
+		runtime.LogError(a.ctx, err.Error())
+		return err
 	}
 	defer file.Close()
 
 	encoder := json.NewEncoder(file)
 	err = encoder.Encode(config)
 	if err != nil {
-		return fmt.Errorf("failed to write config: %w", err)
+		err = fmt.Errorf("failed to write config: %w", err)
+		runtime.LogError(a.ctx, err.Error())
+		return err
 	}
 	return nil
 }
@@ -44,13 +53,17 @@ func (a *App) SaveFTPConfig(config FTPConfig) error {
 func (a *App) GetFTPConfig(name string) (*FTPConfig, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get home directory: %w", err)
+		err = fmt.Errorf("failed to get home directory: %w", err)
+		runtime.LogError(a.ctx, err.Error())
+		return nil, err
 	}
 
 	configPath := filepath.Join(homeDir, "elkdata", name, "ftpinfo.config")
 	file, err := os.Open(configPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open config file: %w", err)
+		err = fmt.Errorf("failed to open config file: %w", err)
+		runtime.LogError(a.ctx, err.Error())
+		return nil, err
 	}
 	defer file.Close()
 
@@ -58,7 +71,9 @@ func (a *App) GetFTPConfig(name string) (*FTPConfig, error) {
 	decoder := json.NewDecoder(file)
 	err = decoder.Decode(&config)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read config: %w", err)
+		err = fmt.Errorf("failed to read config: %w", err)
+		runtime.LogError(a.ctx, err.Error())
+		return nil, err
 	}
 
 	return &config, nil
@@ -67,13 +82,17 @@ func (a *App) GetFTPConfig(name string) (*FTPConfig, error) {
 func (a *App) ListFTPConfigs() ([]string, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get home directory: %w", err)
+		err = fmt.Errorf("failed to get home directory: %w", err)
+		runtime.LogError(a.ctx, err.Error())
+		return nil, err
 	}
 
 	appDataPath := filepath.Join(homeDir, "elkdata")
-	entries, err := ioutil.ReadDir(appDataPath)
+	entries, err := os.ReadDir(appDataPath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read app data directory: %w", err)
+		err = fmt.Errorf("failed to read app data directory: %w", err)
+		runtime.LogError(a.ctx, err.Error())
+		return nil, err
 	}
 
 	var configNames []string
@@ -89,13 +108,17 @@ func (a *App) ListFTPConfigs() ([]string, error) {
 func (a *App) DeleteFTPConfig(name string) error {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		return fmt.Errorf("failed to get home directory: %w", err)
+		err = fmt.Errorf("failed to get home directory: %w", err)
+		runtime.LogError(a.ctx, err.Error())
+		return err
 	}
 
 	configPath := filepath.Join(homeDir, "elkdata", name)
 	err = os.RemoveAll(configPath)
 	if err != nil {
-		return fmt.Errorf("failed to delete ftp directory: %w", err)
+		err = fmt.Errorf("failed to delete ftp directory: %w", err)
+		runtime.LogError(a.ctx, err.Error())
+		return err
 	}
 
 	return nil
