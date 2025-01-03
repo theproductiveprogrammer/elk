@@ -178,8 +178,9 @@ function ShowLogLine({ data }: ShowLogLineParams) {
 }
 
 function afterTime(curr?: Date, prev?: Date): string {
-	if (!prev || !curr) return "";
+	if (!prev || !curr) return "-";
 	let diff = curr.getTime() - prev.getTime();
+	if (diff < 0) return "-";
 	if (diff < 1000) return `+${diff}ms`;
 	diff = Math.round(diff / 1000);
 	if (diff < 60) return `+${diff}secs`;
