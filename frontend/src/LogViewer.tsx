@@ -68,13 +68,13 @@ export default function LogViewer() {
 
 	const loglines: LogLine_[] = [];
 	log?.lines.forEach((line) => {
-		loglines.unshift(new LogLine_(line));
+		loglines.push(new LogLine_(line));
 	});
 
 	let prevDay: string = "";
 	const dispLines: ShowLogLineData[] = [];
 	for (let i = 0; i < loglines.length; i++) {
-		const prev = loglines[i + 1];
+		const prev = loglines[i - 1];
 		const curr = loglines[i];
 		const [currDay, currTime] = fmtDay(curr.on);
 		if (prevDay !== currDay) {
