@@ -31,3 +31,19 @@ export function filter_In(filterIn: string, s: string): boolean {
 	}
 	return true;
 }
+
+export function isLogEq(l1: main.Log | null, l2: main.Log | null): boolean {
+	if (l1 && !l2) return false;
+	if (!l1 && l2) return false;
+	if (!l1 || !l2) return true;
+	if (l1.name !== l2.name) return false;
+	if (l1.lines.length !== l2.lines.length) return false;
+	if (l1.lines.length > 0 && l1.lines[0] !== l2.lines[0]) return false;
+	if (
+		l1.lines.length > 1 &&
+		l1.lines[l1.lines.length - 1] !== l2.lines[l2.lines.length - 1]
+	) {
+		return false;
+	}
+	return true;
+}

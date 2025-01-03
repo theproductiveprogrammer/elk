@@ -18,6 +18,7 @@ interface ViewState extends ViewData {
 	getLineRef: (key: string) => HTMLDivElement | null;
 	setLineRef: (key: string, node: HTMLDivElement | null) => void;
 	scrollToLine: (key: string, animate: boolean) => void;
+	handleNewDataLoaded: () => void;
 }
 
 const useViewStore = create<ViewState>((set) => {
@@ -73,7 +74,37 @@ const useViewStore = create<ViewState>((set) => {
 				}
 			}, 10);
 		},
+
+		handleNewDataLoaded: () => {
+			const scrollContainer = document.getElementById("logviewer_container");
+			if (!scrollContainer) {
+				console.error("Scroll container not found!");
+				return;
+			}
+
+			if (isUserAtBottom(scrollContainer)) {
+				setTimeout(() => scrollToBottom(scrollContainer, true), 500);
+			}
+		},
 	};
 });
+
+const isUserAtBottom = (container: HTMLElement): boolean => {
+	const { scrollTop, scrollHeight, clientHeight } = container;
+	// Allow for a small buffer (e.g., 5px) to account for rounding errors
+	return scrollTop + clientHeight >= scrollHeight - 5;
+};
+
+const scrollToBottom = (container: HTMLElement, animate: boolean) => {
+	const offsetPosition = container.scrollHeight; // New bottom position
+	if (animate) {
+		container.scrollTo({
+			top: offsetPosition,
+			behavior: "smooth",
+		});
+	} else {
+		container.scrollTop = offsetPosition;
+	}
+};
 
 export default useViewStore;

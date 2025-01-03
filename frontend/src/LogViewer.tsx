@@ -6,6 +6,7 @@ import Loader from "./Loader";
 import clsx from "clsx";
 import JSON5 from "json5";
 import { LogError, LogInfo, LogWarning } from "./logger";
+import { isLogEq } from "./stores/appStore";
 
 class LogLine_ extends main.LogLine {
 	on?: Date;
@@ -16,7 +17,7 @@ class LogLine_ extends main.LogLine {
 }
 
 export default function LogViewer() {
-	const { currSite, currFile } = useViewStore();
+	const { currSite, currFile, handleNewDataLoaded } = useViewStore();
 	const [log, setLog] = useState<main.Log | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [filterIn, setFilterIn] = useState("");
@@ -69,9 +70,12 @@ export default function LogViewer() {
 		if (!currSite || !currFile) return;
 		if (initial) setLoading(true);
 		LogInfo(`getting latest log ${currSite.name}/${currFile.name}`);
-		const log = await downloadLog(currSite.name, currFile.name);
+		const latest_log = await downloadLog(currSite.name, currFile.name);
 		LogInfo(`got latest log: ${currSite.name}/${currFile.name}`);
-		setLog(log);
+		if (!isLogEq(log, latest_log)) {
+			handleNewDataLoaded();
+			setLog(latest_log);
+		}
 		if (initial) setLoading(false);
 	}
 
