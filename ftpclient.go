@@ -268,7 +268,7 @@ func (a *App) DownloadLog(site SiteInfo, file *FTPEntry) (*Log, error) {
 
 	if since.Hours() < 24 && localSize >= file.Size {
 		runtime.LogInfo(a.ctx, fmt.Sprintf("File %s already exists and size fine (%d >= %d). No need to fetch...", file.Name, localSize, file.Size))
-		return ParseLog(localPath, nil)
+		return a.parseLog(localPath, nil)
 	}
 
 	conn, err := a.getConnection(site.Config)
@@ -301,7 +301,7 @@ func (a *App) DownloadLog(site SiteInfo, file *FTPEntry) (*Log, error) {
 		}
 
 		runtime.LogInfo(a.ctx, fmt.Sprintf("Completed part download for file %s successfully", file.Name))
-		return ParseLog(localPath, nil)
+		return a.parseLog(localPath, nil)
 
 	} else {
 
@@ -330,7 +330,7 @@ func (a *App) DownloadLog(site SiteInfo, file *FTPEntry) (*Log, error) {
 		}
 
 		runtime.LogInfo(a.ctx, fmt.Sprintf("Downloaded file %s successfully", file.Name))
-		return ParseLog(localPath, nil)
+		return a.parseLog(localPath, nil)
 	}
 }
 
@@ -351,7 +351,7 @@ func (a *App) FetchLocalLog(sitename string, filename string) (*Log, error) {
 	}
 
 	localPath := filepath.Join(homeDir, "elkdata", sitename, "logs", filename)
-	log, err := ParseLog(localPath, nil)
+	log, err := a.parseLog(localPath, nil)
 	if err != nil {
 		err = fmt.Errorf("failed to get local log data for %s: %w", filename, err)
 		runtime.LogError(a.ctx, err.Error())
@@ -359,4 +359,15 @@ func (a *App) FetchLocalLog(sitename string, filename string) (*Log, error) {
 	}
 	runtime.LogInfo(a.ctx, fmt.Sprintf("returning local data for log %s", filename))
 	return log, nil
+}
+
+func (a *App) parseLog(logfile string, transformers []LogTransform) (*Log, error) {
+	log, err := ParseLog(logfile, transformers)
+	if err != nil {
+		err = fmt.Errorf("failed parsing log %s: %w", logfile, err)
+		runtime.LogError(a.ctx, err.Error())
+	} else {
+		runtime.LogInfo(a.ctx, fmt.Sprintf("returning %d parsed lines from %s log", len(log.Lines), logfile))
+	}
+	return log, err
 }
