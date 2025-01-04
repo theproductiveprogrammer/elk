@@ -505,6 +505,7 @@ func xtractJSON(line string) jsonX {
 			}
 		}
 	}
+	x.Line = line
 	return x
 }
 
