@@ -7,6 +7,7 @@ interface ViewData {
 	startVideoLoaded: boolean;
 	currSite: main.SiteInfo | null;
 	currFile: main.FTPEntry | null;
+	fromLine: number;
 }
 interface ViewState extends ViewData {
 	showFTPEditPage: (site: main.SiteInfo | null) => void;
@@ -19,6 +20,7 @@ interface ViewState extends ViewData {
 	setLineRef: (key: string, node: HTMLDivElement | null) => void;
 	scrollToLine: (key: string, animate: boolean) => void;
 	handleNewDataLoaded: () => void;
+	setFromLine: (num: number) => void;
 }
 
 const useViewStore = create<ViewState>((set) => {
@@ -29,6 +31,7 @@ const useViewStore = create<ViewState>((set) => {
 		startVideoLoaded: false,
 		currSite: null,
 		currFile: null,
+		fromLine: 0,
 
 		showFTPEditPage: (site: main.SiteInfo | null) => {
 			set({ currSite: site, showing: "ftpedit" });
@@ -86,6 +89,8 @@ const useViewStore = create<ViewState>((set) => {
 				setTimeout(() => scrollToBottom(scrollContainer, true), 500);
 			}
 		},
+
+		setFromLine: (num: number) => set({ fromLine: num }),
 	};
 });
 

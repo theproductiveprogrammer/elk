@@ -1,4 +1,4 @@
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { Dispatch, Fragment, SetStateAction, useEffect, useState } from "react";
 import useViewStore from "./stores/viewStore";
 import { main } from "../wailsjs/go/models";
 import { downloadLog, fetchLocalLog } from "./FTPHandler";
@@ -16,14 +16,14 @@ class LogLine_ extends main.LogLine {
 	}
 }
 
-const MAX_LOG_LINES = 10_000;
+const MAX_LOG_LINES = 5_000;
 
 export default function LogViewer() {
-	const { currSite, currFile, handleNewDataLoaded } = useViewStore();
+	const { currSite, currFile, handleNewDataLoaded, fromLine, setFromLine } =
+		useViewStore();
 	const [log, setLog] = useState<main.Log | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [filterIn, setFilterIn] = useState("");
-	const [fromLine, setFromLine] = useState(0);
 
 	useEffect(() => {
 		let lastFetched = 0;
@@ -34,13 +34,7 @@ export default function LogViewer() {
 			.then((log) => {
 				if (!lastFetched) {
 					LogInfo(`fetched local log: ${currFile?.name}`);
-					if (log.lines.length > MAX_LOG_LINES) {
-						const firstlog = log.lines[log.lines.length - MAX_LOG_LINES];
-						setFromLine(firstlog.num);
-					} else {
-						const firstlog = log.lines[log.lines.length - 1];
-						setFromLine(firstlog.num);
-					}
+					setFromLineIfNeeded(log);
 					setLog(log);
 					lastFetched = 1;
 					setLoading(false);
@@ -84,10 +78,46 @@ export default function LogViewer() {
 		const latest_log = await downloadLog(currSite.name, currFile.name);
 		LogInfo(`got latest log: ${currSite.name}/${currFile.name}`);
 		if (!isLogEq(log, latest_log)) {
+			setFromLineIfNeeded(latest_log);
 			handleNewDataLoaded();
 			setLog(latest_log);
 		}
 		if (initial) setLoading(false);
+	}
+
+	function setFromLineIfNeeded(log: main.Log) {
+		if (fromLine) return;
+		if (log.lines.length > MAX_LOG_LINES) {
+			const firstlog = log.lines[log.lines.length - MAX_LOG_LINES];
+			setFromLine(firstlog.num);
+		} else {
+			const firstlog = log.lines[log.lines.length - 1];
+			setFromLine(firstlog.num);
+		}
+	}
+
+	function getLogLines_(loglines?: main.LogLine[]): LogLine_[] {
+		const ret: LogLine_[] = [];
+		loglines?.forEach((line) => {
+			if (line.num >= fromLine) {
+				ret.push(new LogLine_(line));
+			}
+		});
+		return ret;
+	}
+
+	function showMore(loglines?: main.LogLine[]) {
+		if (!loglines || !loglines.length) return;
+		let more = 0;
+		for (let i = loglines.length - 1; i >= 0; i--) {
+			const ll = loglines[i];
+			if (ll.num < fromLine) more++;
+			if (more === 999) {
+				setFromLine(ll.num);
+				return;
+			}
+		}
+		setFromLine(loglines[0].num);
 	}
 
 	if (!currFile || !currSite) return <div>UNEXPECTED ERROR: 8989898</div>;
@@ -101,15 +131,17 @@ export default function LogViewer() {
 		);
 	}
 
-	const loglines: LogLine_[] = [];
-	log?.lines.forEach((line) => {
-		if (line.num >= fromLine) {
-			loglines.push(new LogLine_(line));
-		}
-	});
+	const loglines: LogLine_[] = getLogLines_(log?.lines);
 
 	let prevDay: string = "";
 	const dispLines: ShowLogLineData[] = [];
+	if (log && loglines.length && loglines.length < log.lines.length) {
+		dispLines.push({
+			type: "more",
+			key: loglines[0].num + "-more",
+			left: log.lines.length - loglines.length,
+		});
+	}
 	for (let i = 0; i < loglines.length; i++) {
 		const prev = loglines[i - 1];
 		const curr = loglines[i];
@@ -142,14 +174,18 @@ export default function LogViewer() {
 				id="logviewer_container"
 			>
 				{dispLines.map((d) => (
-					<ShowLogLine data={d} />
+					<ShowLogLine
+						key={d.key}
+						data={d}
+						showMore={() => showMore(log?.lines)}
+					/>
 				))}
 			</div>
 		</div>
 	);
 }
 
-type ShowLogLineData = L_LogLine | L_DayLine;
+type ShowLogLineData = L_LogLine | L_DayLine | L_MoreLine;
 type L_DayLine = {
 	type: "day";
 	key: string;
@@ -162,12 +198,18 @@ type L_LogLine = {
 	after: string;
 	tm: string;
 };
+type L_MoreLine = {
+	type: "more";
+	key: string;
+	left: number;
+};
 
 interface ShowLogLineParams {
 	data: ShowLogLineData;
+	showMore: () => void;
 }
 
-function ShowLogLine({ data }: ShowLogLineParams) {
+function ShowLogLine({ data, showMore }: ShowLogLineParams) {
 	const { setLineRef } = useViewStore();
 	const [raw, setRaw] = useState(false);
 	if (data.type === "day") {
@@ -177,6 +219,18 @@ function ShowLogLine({ data }: ShowLogLineParams) {
 				className="text-center text-xs font-bold m-2"
 			>
 				{data.day}
+			</div>
+		);
+	}
+
+	if (data.type === "more") {
+		return (
+			<div
+				ref={(node) => setLineRef(data.key, node)}
+				onClick={() => showMore()}
+				className="text-xs m-2 hover:underline cursor-pointer"
+			>
+				↑{data.left} more...
 			</div>
 		);
 	}
@@ -279,8 +333,8 @@ function StackView({ stack, className }: StackViewProps) {
 	if (!stack) return <div></div>;
 	return (
 		<div className="grid grid-cols-logview">
-			{stack.map((l) => (
-				<>
+			{stack.map((l, ndx) => (
+				<Fragment key={ndx}>
 					<div></div>
 					<div
 						className={clsx(
@@ -290,7 +344,7 @@ function StackView({ stack, className }: StackViewProps) {
 					>
 						{l}
 					</div>
-				</>
+				</Fragment>
 			))}
 		</div>
 	);
@@ -432,8 +486,8 @@ function Header({
 						type="search"
 						placeholder="filter in"
 						disabled={!setFilterIn}
-						value={filterIn}
-						onChange={(e) => setFilterIn && setFilterIn(e.target.value)}
+						value={filterIn || ""}
+						onChange={(e) => setFilterIn && setFilterIn(e.target.value || "")}
 						className="text-sm p-0 m-0 rounded-sm border border-gray-300 px-1 w-32 mr-4"
 					/>
 					<input
