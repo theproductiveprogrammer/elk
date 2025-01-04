@@ -243,6 +243,7 @@ func popSource(tokens []string) (*string, []string, int) {
 }
 
 var numRx *regexp.Regexp = regexp.MustCompile(`^\d+$`)
+var alphaNumRx *regexp.Regexp = regexp.MustCompile(`^[A-Za-z0-9]`)
 var ipRx *regexp.Regexp = regexp.MustCompile(`^\d{1,3}(\.\d{1,3}){3}$`)
 
 func isSource(token string) bool {
@@ -268,13 +269,17 @@ func isSource(token string) bool {
 			numdots++
 		}
 	}
-	if numdots > 2 {
+	if numdots > 2 && numdots < 5 {
 		return true
 	}
 
 	// Check for thread-like or module-like patterns (e.g., [main])
-	if strings.HasPrefix(token, "[") && strings.HasSuffix(token, "]") {
+	if strings.HasPrefix(token, "[") && strings.HasSuffix(token, "]") && strings.Index(token, "\"") == -1 {
 		return true
+	}
+
+	if !alphaNumRx.MatchString(token) {
+		return false
 	}
 
 	// Check if it's just a number
