@@ -367,7 +367,7 @@ func (a *App) parseLog(logfile string, transformers []LogTransform) (*Log, error
 		err = fmt.Errorf("failed parsing log %s: %w", logfile, err)
 		runtime.LogError(a.ctx, err.Error())
 	} else {
-		runtime.LogInfo(a.ctx, fmt.Sprintf("returning %d parsed lines from %s log", len(log.Lines), logfile))
+		runtime.LogInfo(a.ctx, fmt.Sprintf("returning %d parsed lines from :%s", len(log.Lines), logfile))
 	}
 	return log, err
 }

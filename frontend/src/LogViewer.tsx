@@ -28,6 +28,20 @@ export default function LogViewer() {
 	const [log, setLog_] = useState<main.Log | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [filterIn, setFilterIn] = useState("");
+	const [dispLines, setDispLines] = useState<LogLine_[]>([]);
+
+	useEffect(() => {
+		const displayLines: LogLine_[] = [];
+
+		log?.lines.forEach((line) => {
+			if (line.num >= fromLine) {
+				displayLines.push(new LogLine_(line));
+			}
+		});
+		LogInfo(`setting display lines from: ${log?.lines.length} to: ${fromLine}`);
+
+		setDispLines(displayLines);
+	}, [log, fromLine]);
 
 	useEffect(() => {
 		let lastFetched = 0;
@@ -54,7 +68,7 @@ export default function LogViewer() {
 
 		const timer = setInterval(async () => {
 			if (!currSite || !currFile) return;
-			if (fetching || Date.now() - lastFetched < 10 * 1000) return;
+			if (fetching || Date.now() - lastFetched < 40 * 1000) return;
 			fetching = true;
 			try {
 				LogInfo(`getting latest log ${currSite.name}/${currFile.name}`);
@@ -89,16 +103,6 @@ export default function LogViewer() {
 		setLog_(log_);
 	}
 
-	function getLogLines_(loglines?: main.LogLine[]): LogLine_[] {
-		const ret: LogLine_[] = [];
-		loglines?.forEach((line) => {
-			if (line.num >= fromLine) {
-				ret.push(new LogLine_(line));
-			}
-		});
-		return ret;
-	}
-
 	function showMore(loglines?: main.LogLine[]) {
 		if (!loglines || !loglines.length) return;
 		let more = 0;
@@ -124,55 +128,89 @@ export default function LogViewer() {
 		);
 	}
 
-	const loglines: LogLine_[] = getLogLines_(log?.lines);
-
-	let prevDay: string = "";
-	const dispLines: ShowLogLineData[] = [];
-	if (log && loglines.length && loglines.length < log.lines.length) {
-		dispLines.push({
-			type: "more",
-			key: loglines[0].num + "-more",
-			left: log.lines.length - loglines.length,
-		});
-	}
-	for (let i = 0; i < loglines.length; i++) {
-		const prev = loglines[i - 1];
-		const curr = loglines[i];
-		const [currDay, currTime] = fmtDay(curr.on);
-		if (prevDay !== currDay) {
-			dispLines.push({ type: "day", day: currDay, key: curr.num + "-day" });
-		}
-		prevDay = currDay;
-
-		dispLines.push({
-			type: "logline",
-			after: afterTime(curr.on, prev?.on),
-			line: curr,
-			tm: currTime,
-			key: curr.num + "",
-		});
-	}
-
 	return (
 		<div className="w-3/4 h-svh overflow-scroll flex flex-col">
 			<Header
 				currSite={currSite}
 				currFile={currFile}
-				dispLines={dispLines}
 				filterIn={filterIn}
 				setFilterIn={setFilterIn}
 			/>
+			<LogLinesView
+				full={log?.lines}
+				disp={dispLines}
+				fromLine={fromLine}
+				showMore={() => showMore(log?.lines)}
+			/>
+		</div>
+	);
+}
+
+interface LogLinesViewParams {
+	full?: main.LogLine[];
+	disp: LogLine_[];
+	fromLine: number;
+	showMore: () => void;
+}
+
+function LogLinesView({ full, disp, showMore }: LogLinesViewParams) {
+	const { scrollToLine } = useViewStore();
+	const [dispLines, setDispLines] = useState<ShowLogLineData[]>([]);
+
+	useEffect(() => {
+		const dls: ShowLogLineData[] = [];
+		const hasMore = full && disp.length && disp.length < full.length;
+
+		if (hasMore) {
+			dls.push({
+				type: "more",
+				key: disp[0].num + "-more",
+				left: full.length - disp.length,
+			});
+		}
+
+		let prevDay: string = "";
+		for (let i = hasMore ? 1 : 0; i < disp.length; i++) {
+			const prev = disp[i - 1];
+			const curr = disp[i];
+			const [currDay, currTime] = fmtDay(curr.on);
+			if (prevDay !== currDay) {
+				dls.push({ type: "day", day: currDay, key: curr.num + "-day" });
+			}
+			prevDay = currDay;
+
+			dls.push({
+				type: "logline",
+				after: afterTime(curr.on, prev?.on),
+				line: curr,
+				tm: currTime,
+				key: curr.num + "",
+			});
+		}
+
+		LogInfo(`drawing ${dls.length} lines`);
+		setDispLines(dls);
+	}, [disp]);
+
+	function scrollToBottom() {
+		if (!dispLines) return;
+		const lastline = dispLines[dispLines.length - 1];
+		scrollToLine(lastline.key, true);
+	}
+
+	return (
+		<div
+			className="overflow-scroll flex-grow relative"
+			id="logviewer_container"
+		>
+			{dispLines.map((d) => (
+				<ShowLogLine key={d.key} data={d} showMore={showMore} />
+			))}
 			<div
-				className="overflow-scroll flex-grow relative"
-				id="logviewer_container"
+				className="absolute text-xs opacity-30 cursor-pointer hover:opacity-100 hover:text-blue-800 hover:underline z-20 top-0 right-0 p-2"
+				onClick={() => scrollToBottom()}
 			>
-				{dispLines.map((d) => (
-					<ShowLogLine
-						key={d.key}
-						data={d}
-						showMore={() => showMore(log?.lines)}
-					/>
-				))}
+				to bottom↓
 			</div>
 		</div>
 	);
@@ -221,7 +259,7 @@ function ShowLogLine({ data, showMore }: ShowLogLineParams) {
 			<div
 				ref={(node) => setLineRef(data.key, node)}
 				onClick={() => showMore()}
-				className="text-xs m-2 hover:underline cursor-pointer"
+				className="text-xs m-2 hover:underline hover:text-blue-800 cursor-pointer"
 			>
 				↑{data.left} more...
 			</div>
@@ -448,25 +486,10 @@ function stdLevel(level?: string): StdLevel {
 interface HeaderParams {
 	currSite: main.SiteInfo;
 	currFile: main.FTPEntry;
-	dispLines?: ShowLogLineData[];
 	filterIn?: string;
 	setFilterIn?: Dispatch<SetStateAction<string>>;
 }
-function Header({
-	currSite,
-	currFile,
-	dispLines,
-	filterIn,
-	setFilterIn,
-}: HeaderParams) {
-	const { scrollToLine } = useViewStore();
-
-	function scrollToBottom() {
-		if (!dispLines) return;
-		const lastline = dispLines[dispLines.length - 1];
-		scrollToLine(lastline.key, true);
-	}
-
+function Header({ currSite, currFile, filterIn, setFilterIn }: HeaderParams) {
 	return (
 		<div className="w-full border-b border-elk-green relative">
 			<div className="text-center">
@@ -497,18 +520,6 @@ function Header({
 					/>
 				</div>
 			</div>
-			{dispLines && (
-				<div
-					className="absolute text-xxs opacity-30 cursor-pointer hover:opacity-100 hover:text-blue-800 hover:underline z-20"
-					onClick={() => scrollToBottom()}
-					style={{
-						bottom: "-16px",
-						right: "8px",
-					}}
-				>
-					to bottom
-				</div>
-			)}
 		</div>
 	);
 }
