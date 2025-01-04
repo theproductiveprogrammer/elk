@@ -1,9 +1,8 @@
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
-import useViewStore from "./stores/viewStore";
+import useViewStore, { filter_In } from "./stores/viewStore";
 import { main } from "../wailsjs/go/models";
 import { loadFileInfos, loadLocalFileInfos } from "./FTPHandler";
 import Loader from "./Loader";
-import { filter_In } from "./stores/appStore";
 
 export default function SitePage() {
 	const { currSite, setCurrSite, showLogFile } = useViewStore();
@@ -41,7 +40,7 @@ export default function SitePage() {
 	}
 	if (currSite.error) {
 		return (
-			<div className="w-3/4 h-svh overflow-scroll">
+			<div className="w-3/4 md:w-10/12 h-svh overflow-scroll">
 				<Header currSite={currSite} />
 				{currSite.error && (
 					<div className="text-center text-red-600">{currSite.error}</div>
@@ -56,7 +55,7 @@ export default function SitePage() {
 	}
 
 	return (
-		<div className="w-3/4 h-svh flex flex-col">
+		<div className="w-3/4 md:w-10/12 h-svh flex flex-col">
 			<Header
 				currSite={currSite}
 				filterIn={filterIn}

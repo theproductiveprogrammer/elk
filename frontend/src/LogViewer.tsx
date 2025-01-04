@@ -1,5 +1,12 @@
-import { Dispatch, Fragment, SetStateAction, useEffect, useState } from "react";
-import useViewStore, { calcNewFromLine } from "./stores/viewStore";
+import { Fragment, KeyboardEvent, useEffect, useState } from "react";
+import useViewStore, {
+	calcNewFromLine,
+	emptyFilters,
+	filtered,
+	hasActiveFilters,
+	LogFilters,
+	stdLevel,
+} from "./stores/viewStore";
 import { main } from "../wailsjs/go/models";
 import { downloadLog, fetchLocalLog } from "./FTPHandler";
 import Loader from "./Loader";
@@ -17,31 +24,30 @@ class LogLine_ extends main.LogLine {
 }
 
 export default function LogViewer() {
-	const { currSite, currFile, handleNewDataLoaded, fromLine, setFromLine } =
-		useViewStore();
+	const {
+		currSite,
+		currFile,
+		handleNewDataLoaded,
+		fromLine,
+		setFromLine,
+		fromFilteredLine,
+		setFromFilteredLine,
+	} = useViewStore();
 	const [log, setLog_] = useState<main.Log | null>(null);
 	const [loading, setLoading] = useState(false);
-	const [filterIn, setFilterIn] = useState("");
-	const [dispLines, setDispLines] = useState<LogLine_[]>([]);
+	const [filters, setFilters_] = useState<LogFilters>(emptyFilters());
 
 	useEffect(() => {
-		const displayLines: LogLine_[] = [];
-
-		log?.lines.forEach((line) => {
-			if (line.num >= fromLine) {
-				displayLines.push(new LogLine_(line));
-			}
-		});
-		LogInfo(`setting display lines from: ${log?.lines.length} to: ${fromLine}`);
-
-		setDispLines(displayLines);
-	}, [log, fromLine]);
+		const loglines: main.LogLine[] = filtered(filters, log?.lines);
+		setFromFilteredLine(calcNewFromLine(loglines));
+	}, [filters]);
 
 	useEffect(() => {
 		let lastFetched = 0;
 		let fetching = false;
 		setLoading(true);
 		setFromLine(0);
+		setFromFilteredLine(0);
 
 		(async () => {
 			try {
@@ -96,18 +102,21 @@ export default function LogViewer() {
 		setLog_(log_);
 	}
 
-	function showMore(loglines?: main.LogLine[]) {
-		if (!loglines || !loglines.length) return;
+	function getMoreNum(fromnum: number, loglines?: main.LogLine[]): number {
+		if (!loglines || !loglines.length) return -1;
 		let more = 0;
 		for (let i = loglines.length - 1; i >= 0; i--) {
 			const ll = loglines[i];
-			if (ll.num < fromLine) more++;
+			if (ll.num < fromnum) more++;
 			if (more === 999) {
-				setFromLine(ll.num);
-				return;
+				return ll.num;
 			}
 		}
-		setFromLine(loglines[0].num);
+		return loglines[0].num;
+	}
+
+	function setFilters(filters: LogFilters) {
+		setFilters_(filters);
 	}
 
 	if (!currFile || !currSite) return <div>UNEXPECTED ERROR: 8989898</div>;
@@ -121,22 +130,73 @@ export default function LogViewer() {
 		);
 	}
 
-	return (
-		<div className="w-3/4 md:w-10/12 h-svh overflow-scroll flex flex-col">
-			<Header
-				currSite={currSite}
-				currFile={currFile}
-				filterIn={filterIn}
-				setFilterIn={setFilterIn}
-			/>
-			<LogLinesView
-				full={log?.lines}
-				disp={dispLines}
-				fromLine={fromLine}
-				showMore={() => showMore(log?.lines)}
-			/>
-		</div>
-	);
+	if (hasActiveFilters(filters)) {
+		const loglines: main.LogLine[] = filtered(filters, log?.lines);
+
+		const displayLines: LogLine_[] = [];
+
+		loglines.forEach((line) => {
+			if (line.num >= fromFilteredLine) {
+				displayLines.push(new LogLine_(line));
+			}
+		});
+		LogInfo(
+			`setting filtered lines from: ${loglines.length} to: ${fromFilteredLine}`
+		);
+
+		function showMore(loglines?: main.LogLine[]) {
+			const n = getMoreNum(fromFilteredLine, loglines);
+			if (n < 0) return;
+			setFromFilteredLine(n);
+		}
+
+		return (
+			<div className="w-3/4 md:w-10/12 h-svh overflow-scroll flex flex-col">
+				<Header
+					currSite={currSite}
+					currFile={currFile}
+					setFilters={setFilters}
+				/>
+				<LogLinesView
+					full={loglines}
+					disp={displayLines}
+					fromLine={fromLine}
+					showMore={() => showMore(loglines)}
+				/>
+			</div>
+		);
+	} else {
+		const displayLines: LogLine_[] = [];
+
+		log?.lines.forEach((line) => {
+			if (line.num >= fromLine) {
+				displayLines.push(new LogLine_(line));
+			}
+		});
+		LogInfo(`setting display lines from: ${log?.lines.length} to: ${fromLine}`);
+
+		function showMore(loglines?: main.LogLine[]) {
+			const n = getMoreNum(fromLine, loglines);
+			if (n < 0) return;
+			setFromLine(n);
+		}
+
+		return (
+			<div className="w-3/4 md:w-10/12 h-svh overflow-scroll flex flex-col">
+				<Header
+					currSite={currSite}
+					currFile={currFile}
+					setFilters={setFilters}
+				/>
+				<LogLinesView
+					full={log?.lines}
+					disp={displayLines}
+					fromLine={fromLine}
+					showMore={() => showMore(log?.lines)}
+				/>
+			</div>
+		);
+	}
 }
 
 interface LogLinesViewParams {
@@ -491,25 +551,24 @@ function p2(n: number): string {
 	return "" + n;
 }
 
-type StdLevel = "T" | "D" | "I" | "W" | "E";
-
-function stdLevel(level?: string): StdLevel {
-	if (!level) return "I";
-	if (level[0] === "T" || level[0] === "t") return "T";
-	if (level[0] === "D" || level[0] === "d") return "D";
-	if (level[0] === "I" || level[0] === "i") return "I";
-	if (level[0] === "W" || level[0] === "w") return "W";
-	if (level[0] === "E" || level[0] === "e") return "E";
-	return "I";
-}
-
 interface HeaderParams {
 	currSite: main.SiteInfo;
 	currFile: main.FTPEntry;
-	filterIn?: string;
-	setFilterIn?: Dispatch<SetStateAction<string>>;
+	setFilters?: (filters: LogFilters) => void;
 }
-function Header({ currSite, currFile, filterIn, setFilterIn }: HeaderParams) {
+function Header({ currSite, currFile, setFilters }: HeaderParams) {
+	const [filterIn, setFilterIn] = useState("");
+	const [filterOut, setFilterOut] = useState("");
+	const [findStr, setFindStr] = useState("");
+
+	function onKeydown(e: KeyboardEvent) {
+		if (setFilters && e.key === "Enter") {
+			e.preventDefault();
+			e.stopPropagation();
+			setFilters({ filterIn, filterOut, findStr });
+		}
+	}
+
 	return (
 		<div className="w-full border-b border-elk-green relative">
 			<div className="text-center">
@@ -521,14 +580,19 @@ function Header({ currSite, currFile, filterIn, setFilterIn }: HeaderParams) {
 					<input
 						type="search"
 						placeholder="filter in"
-						disabled={!setFilterIn}
-						value={filterIn || ""}
-						onChange={(e) => setFilterIn && setFilterIn(e.target.value || "")}
+						disabled={!setFilters}
+						onKeyDown={onKeydown}
+						value={filterIn}
+						onChange={(e) => setFilterIn(e.target.value || "")}
 						className="text-sm p-0 m-0 rounded-sm border border-gray-300 px-1 w-32 mr-4"
 					/>
 					<input
 						type="search"
 						placeholder="filter out"
+						disabled={!setFilters}
+						onKeyDown={onKeydown}
+						value={filterOut}
+						onChange={(e) => setFilterOut(e.target.value || "")}
 						className="text-sm p-0 m-0 rounded-sm border border-gray-300 px-1 w-32"
 					/>
 				</div>
@@ -536,6 +600,10 @@ function Header({ currSite, currFile, filterIn, setFilterIn }: HeaderParams) {
 					<input
 						type="search"
 						placeholder="find"
+						disabled={true}
+						onKeyDown={onKeydown}
+						value={findStr}
+						onChange={(e) => setFindStr(e.target.value || "")}
 						className="text-sm p-0 m-0 rounded-sm border border-gray-300 px-1"
 					/>
 				</div>

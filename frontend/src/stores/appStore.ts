@@ -17,21 +17,6 @@ const useAppStore = create<AppState>((set) => ({
 
 export default useAppStore;
 
-const capsrx = /[A-Z]/;
-export function filter_In(filterIn: string, s: string): boolean {
-	if (!filterIn) return true;
-	const fs = filterIn.split(/\s/g);
-	for (let i = 0; i < fs.length; i++) {
-		try {
-			const rx = new RegExp(fs[i], capsrx.test(fs[i]) ? "" : "i");
-			if (!rx.test(s)) return false;
-		} catch (e) {
-			/* ignore */
-		}
-	}
-	return true;
-}
-
 export function isLogEq(l1: main.Log | null, l2: main.Log | null): boolean {
 	if (l1 && !l2) return false;
 	if (!l1 && l2) return false;
