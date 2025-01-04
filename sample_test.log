@@ -139,3 +139,4 @@ Caused by: java.lang.reflect.InvocationTargetException: null
 	... 49 common frames omitted
 2024-12-30 04:26:55,377 11105309 [qtp466002798-105] WARN  com.r2.ui.Login - Error: during login test
 2024-12-30 04:26:55,377 11105309 [qtp466002798-105] WARN  com.r2.ui.Login - Error during login test: 87
+2025-01-04 01:24:09,867 118978 [scheduled-executor-thread-1] DEBUG i.m.context.DefaultBeanContext - Finalized bean definitions candidates: [Definition: io.micronaut.management.health.indicator.diskspace.DiskSpaceIndicator, Definition: io.micronaut.management.health.indicator.discovery.DiscoveryClientHealthIndicator, Definition: io.micronaut.management.health.indicator.service.ServiceReadyHealthIndicator]
