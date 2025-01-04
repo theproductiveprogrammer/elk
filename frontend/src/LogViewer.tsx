@@ -285,7 +285,9 @@ function ShowLogLine({ data, showMore }: ShowLogLineParams) {
 				</div>
 				<div className="w-full">
 					<span className="text-xs text-gray-400 mr-2">{data.tm}</span>
-					<span className={colorOf(data.line.level)}>{data.line.msg}</span>
+					<span className={colorOf(data.line.level)}>
+						<LimitMsg s={data.line.msg} />
+					</span>
 					<JSONView
 						json={data.line.json}
 						className={colorOf(data.line.level)}
@@ -297,12 +299,30 @@ function ShowLogLine({ data, showMore }: ShowLogLineParams) {
 	);
 }
 
+function LimitMsg({ s }: { s: string }) {
+	if (!s || s.length < 1024) return <span>{s}</span>;
+
+	return (
+		<span>
+			<span>{s.substring(0, 256)}</span>
+			<span className="text-sm text-gray-400">{s.substring(256, 512)}</span>
+			<span className="text-yellow-500 italic">
+				... ✂ ✂ ✂ (snipped large message) ✂ ✂ ✂ ...
+			</span>
+			<span className="text-sm text-gray-400">
+				{s.substring(s.length - 512, s.length - 256)}
+			</span>
+			<span>{s.substring(s.length - 256)}</span>
+		</span>
+	);
+}
+
 function colorOf(level?: string): string {
 	switch (stdLevel(level)) {
 		case "T":
-			return "text-slate-400";
+			return "text-slate-400 text-sm";
 		case "D":
-			return "text-gray-700";
+			return "text-gray-700 text-sm";
 		case "I":
 			return "text-gray-700";
 		case "W":
@@ -376,10 +396,12 @@ function StackView({ stack, className }: StackViewProps) {
 	function is_important_1(l: string): boolean {
 		const stdpkgs = [
 			"java.lang.",
+			"java.base.",
 			"java.util.",
 			"java.io.",
 			"javax.servlet.",
 			"javax.swing.",
+			"jdk.internal.",
 			"org.apache.",
 			"org.springframework.",
 			"com.fasterxml.jackson.",
@@ -413,6 +435,11 @@ function StackView({ stack, className }: StackViewProps) {
 			"org.apache.kafka.",
 			"io.micronaut.",
 			"io.quarkus.",
+			"sun.net.",
+			"sun.reflect.",
+			"com.mchange.",
+			"com.mysql.",
+			"cj.jdbc.",
 		];
 		for (let i = 0; i < stdpkgs.length; i++) {
 			if (l.indexOf(stdpkgs[i]) !== -1) return false;
