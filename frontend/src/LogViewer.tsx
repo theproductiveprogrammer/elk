@@ -16,12 +16,16 @@ class LogLine_ extends main.LogLine {
 	}
 }
 
-const MAX_LOG_LINES = 5_000;
-
 export default function LogViewer() {
-	const { currSite, currFile, handleNewDataLoaded, fromLine, setFromLine } =
-		useViewStore();
-	const [log, setLog] = useState<main.Log | null>(null);
+	const {
+		currSite,
+		currFile,
+		handleNewDataLoaded,
+		fromLine,
+		setFromLine,
+		setFromLineIfNeeded,
+	} = useViewStore();
+	const [log, setLog_] = useState<main.Log | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [filterIn, setFilterIn] = useState("");
 
@@ -30,70 +34,59 @@ export default function LogViewer() {
 		let fetching = false;
 		setLoading(true);
 		setFromLine(0);
-		fetchLocalLog(currSite?.name, currFile?.name)
-			.then((log) => {
-				if (!lastFetched) {
-					LogInfo(`fetched local log: ${currFile?.name}`);
-					setFromLineIfNeeded(log);
-					setLog(log);
-					lastFetched = 1;
-					setLoading(false);
+
+		(async () => {
+			try {
+				LogInfo(`fetching local log: ${currFile?.name}`);
+				const local_log = await fetchLocalLog(currSite?.name, currFile?.name);
+				LogInfo(`fetched local log: ${currFile?.name}`);
+				if (lastFetched) {
+					LogInfo(`ignoring local log - already fetched latest log`);
+					return;
 				}
-			})
-			.catch((err) => {
+				setLog(local_log);
+				setLoading(false);
+			} catch (err) {
 				LogWarning(`failed to fetch local log: ${currFile?.name}`);
-				LogWarning(err);
-				getLatestLog(lastFetched === 0)
-					.then(() => {
-						fetching = false;
-						lastFetched = Date.now();
-					})
-					.catch((err) => {
-						fetching = false;
-						console.error(err);
-					});
-			});
-		const timer = setInterval(() => {
+				console.warn(err);
+			}
+		})();
+
+		const timer = setInterval(async () => {
+			if (!currSite || !currFile) return;
 			if (fetching || Date.now() - lastFetched < 10 * 1000) return;
 			fetching = true;
-			getLatestLog(lastFetched === 0)
-				.then(() => {
-					fetching = false;
-					lastFetched = Date.now();
-				})
-				.catch((err) => {
-					fetching = false;
-					console.error(err);
-					LogError(`failed to get latest log`);
-				});
+			try {
+				LogInfo(`getting latest log ${currSite.name}/${currFile.name}`);
+				const latest_log = await downloadLog(currSite.name, currFile.name);
+				LogInfo(`got latest log: ${currSite.name}/${currFile.name}`);
+				lastFetched = Date.now();
+				setLog(latest_log);
+				setLoading(false);
+			} catch (err) {
+				console.error(err);
+				LogError(`failed to get latest log`);
+			}
+			fetching = false;
 		}, 1000);
 
 		return () => clearInterval(timer);
 	}, [currFile?.name]);
 
-	async function getLatestLog(initial: boolean) {
-		if (!currSite || !currFile) return;
-		if (initial) setLoading(true);
-		LogInfo(`getting latest log ${currSite.name}/${currFile.name}`);
-		const latest_log = await downloadLog(currSite.name, currFile.name);
-		LogInfo(`got latest log: ${currSite.name}/${currFile.name}`);
-		if (!isLogEq(log, latest_log)) {
-			setFromLineIfNeeded(latest_log);
-			handleNewDataLoaded();
-			setLog(latest_log);
+	function setLog(log_: main.Log | null) {
+		if (!log_) {
+			console.log(`setting log to NULL`);
+			setFromLine(0);
+			setLog(null);
+			return;
 		}
-		if (initial) setLoading(false);
-	}
 
-	function setFromLineIfNeeded(log: main.Log) {
-		if (fromLine) return;
-		if (log.lines.length > MAX_LOG_LINES) {
-			const firstlog = log.lines[log.lines.length - MAX_LOG_LINES];
-			setFromLine(firstlog.num);
-		} else {
-			const firstlog = log.lines[log.lines.length - 1];
-			setFromLine(firstlog.num);
-		}
+		if (isLogEq(log_, log)) return;
+
+		console.log(`setting new log (${log_.lines.length} lines) `);
+		setFromLineIfNeeded(log_);
+		handleNewDataLoaded();
+		setLog_(log_);
 	}
 
 	function getLogLines_(loglines?: main.LogLine[]): LogLine_[] {

@@ -11,21 +11,19 @@ export default function SitePage() {
 	const [filterIn, setFilterIn] = useState("");
 
 	useEffect(() => {
-		if (currSite) refresh();
-	}, [currSite?.name]);
-
-	async function refresh() {
 		if (!currSite) return;
-		setLoading(true);
-		const localSite = await loadLocalFileInfos(currSite.name);
-		if (localSite && !localSite.error) {
-			setCurrSite(localSite);
+		(async () => {
+			setLoading(true);
+			const localSite = await loadLocalFileInfos(currSite.name);
+			if (localSite && !localSite.error) {
+				setCurrSite(localSite);
+				setLoading(false);
+			}
+			const site = await loadFileInfos(currSite.name);
+			setCurrSite(site);
 			setLoading(false);
-		}
-		const site = await loadFileInfos(currSite.name);
-		setCurrSite(site);
-		setLoading(false);
-	}
+		})();
+	}, [currSite?.name]);
 
 	async function showlog(log: main.FTPEntry) {
 		showLogFile(log);
@@ -116,8 +114,8 @@ function Header({ currSite, filterIn, setFilterIn }: HeaderParams) {
 					type="search"
 					placeholder="filter"
 					disabled={!setFilterIn}
-					value={filterIn}
-					onChange={(e) => setFilterIn && setFilterIn(e.target.value)}
+					value={filterIn || ""}
+					onChange={(e) => setFilterIn && setFilterIn(e.target.value || "")}
 					className="text-sm p-0 m-0 rounded-sm border border-gray-300 px-1 w-64 mr-2"
 				/>
 			</div>

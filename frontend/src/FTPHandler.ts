@@ -74,14 +74,10 @@ export async function downloadLog(
 	downloadingLog = true;
 
 	try {
-		const cached = CACHE[sitename];
-		if (!cached) {
-			throw `Failed to get site info for: "${sitename}"`;
-		}
-		cached.fi.fileInfo.at = 0;
-		const log = cached.site.logs.filter((log) => log.name === logname)[0];
+		const site = await loadFileInfos(sitename);
+		const log = site.logs.filter((log) => log.name === logname)[0];
 		if (!log) throw `UNEXPECTED ERROR: 77778 ${logname} info not found`;
-		const data = await DownloadLog(cached.site, log);
+		const data = await DownloadLog(site, log);
 		downloadingLog = false;
 		return data;
 	} catch (err) {
@@ -108,52 +104,24 @@ export async function fetchLocalLog(
 	return await FetchLocalLog(sitename, logname);
 }
 
-const FETCH_CYCLE_TIME = 40 * 1000;
-const FETCH_ERR_CYCLE_TIME = 120 * 1000;
 const WAIT_TIME = 500;
 
 export async function loadFileInfos(n: string): Promise<main.SiteInfo> {
 	const entry = CACHE[n];
-	if (!entry.fi.fileInfo.at) {
-		while (!entry.fi.fileInfo.at) {
+	if (!entry) throw `unexpected error! did not find ${n} in cache`;
+	if (entry.fi.fileInfo.fetching) {
+		while (entry.fi.fileInfo.fetching) {
 			await new Promise((resolve) => setTimeout(resolve, WAIT_TIME));
 		}
+		if (entry.site) return entry.site;
 	}
-	return entry.site;
-}
-
-function backgroundLoadFileInfos() {
-	Object.keys(CACHE).forEach(bgLoadFileInfos);
-}
-async function bgLoadFileInfos(name: string) {
-	const entry = CACHE[name];
-	if (entry.fi.fileInfo.fetching) return;
-	const s = Date.now();
-	if (entry.site.error && s - entry.fi.fileInfo.at < FETCH_ERR_CYCLE_TIME)
-		return;
-	if (s - entry.fi.fileInfo.at < FETCH_CYCLE_TIME) return;
 	entry.fi.fileInfo.fetching = true;
 	entry.site = await GetFileInfos(entry.site.ftpConfig);
 	entry.fi.fileInfo.at = Date.now();
 	entry.fi.fileInfo.fetching = false;
 	if (entry.site.error) {
-		LogWarning(`error loading ${name}: ${entry.site.error}`);
-	} else {
-		LogInfo(
-			`loaded file info for: ${name} in ${Math.round((entry.fi.fileInfo.at - s) / 1000)}s`
-		);
+		LogWarning(`error loading ${n}: ${entry.site.error}`);
 	}
-}
 
-async function backgroundLoad() {
-	while (true) {
-		const keys = Object.keys(CACHE);
-		if (!keys.length) {
-			await new Promise((resolve) => setTimeout(resolve, WAIT_TIME));
-			continue;
-		}
-		await new Promise((resolve) => setTimeout(resolve, WAIT_TIME));
-		backgroundLoadFileInfos();
-	}
+	return entry.site;
 }
-backgroundLoad();

@@ -21,9 +21,11 @@ interface ViewState extends ViewData {
 	scrollToLine: (key: string, animate: boolean) => void;
 	handleNewDataLoaded: () => void;
 	setFromLine: (num: number) => void;
+	setFromLineIfNeeded: (log: main.Log) => void;
 }
 
-const useViewStore = create<ViewState>((set) => {
+const useViewStore = create<ViewState>((set, get) => {
+	const MAX_LOG_LINES = 5_000;
 	const lineRefs: Record<string, HTMLDivElement | null> = {};
 
 	return {
@@ -91,6 +93,25 @@ const useViewStore = create<ViewState>((set) => {
 		},
 
 		setFromLine: (num: number) => set({ fromLine: num }),
+		setFromLineIfNeeded: (log: main.Log) => {
+			const { fromLine } = get();
+			if (fromLine) {
+				console.log(
+					`${log.name}: lines: ${log.lines.length} fromLine:${fromLine}`
+				);
+				return fromLine;
+			}
+			let firstlog;
+			if (log.lines.length > MAX_LOG_LINES) {
+				firstlog = log.lines[log.lines.length - MAX_LOG_LINES];
+			} else {
+				firstlog = log.lines[log.lines.length - 1];
+			}
+			console.log(
+				`${log.name}: lines: ${log.lines.length} setting fromLine to:${firstlog.num}`
+			);
+			return set({ fromLine: firstlog.num });
+		},
 	};
 });
 
