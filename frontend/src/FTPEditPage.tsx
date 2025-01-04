@@ -69,6 +69,7 @@ export default function FTPEditPage() {
 		await DeleteFTPConfig(currSite.name);
 		await setFTPConfigs();
 		setCurrSite(null);
+		showStartPage();
 	}
 
 	return (
