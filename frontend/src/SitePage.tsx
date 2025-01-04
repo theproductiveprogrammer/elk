@@ -33,7 +33,7 @@ export default function SitePage() {
 
 	if (loading) {
 		return (
-			<div className="w-3/4 h-svh overflow-scroll">
+			<div className="w-3/4 md:w-10/12 h-svh overflow-scroll">
 				<Header currSite={currSite} />
 				<Loader />
 			</div>

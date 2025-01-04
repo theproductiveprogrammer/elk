@@ -72,7 +72,7 @@ export default function FTPEditPage() {
 	}
 
 	return (
-		<div className="m-8">
+		<div className="w-1/4 md:w-10/12 m-8">
 			<div className="text-lg font-bold mb-6">Edit Site Details</div>
 			<div className="text-center text-red-600 mb-2">{err || "\u00A0"}</div>
 			<form onSubmit={onSubmit}>

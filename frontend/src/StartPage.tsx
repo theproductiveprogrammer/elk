@@ -19,7 +19,7 @@ export default function StartPage() {
 	return (
 		<div
 			className={clsx(
-				"w-3/4 bg-gray-50 h-svh overflow-scroll border-r relative",
+				"sm:w-3/4 md:w-10/12 bg-gray-50 h-svh overflow-scroll border-r relative",
 				startVideoLoaded || "hidden"
 			)}
 		>

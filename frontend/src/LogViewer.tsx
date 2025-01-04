@@ -1,5 +1,5 @@
 import { Dispatch, Fragment, SetStateAction, useEffect, useState } from "react";
-import useViewStore from "./stores/viewStore";
+import useViewStore, { calcNewFromLine } from "./stores/viewStore";
 import { main } from "../wailsjs/go/models";
 import { downloadLog, fetchLocalLog } from "./FTPHandler";
 import Loader from "./Loader";
@@ -17,14 +17,8 @@ class LogLine_ extends main.LogLine {
 }
 
 export default function LogViewer() {
-	const {
-		currSite,
-		currFile,
-		handleNewDataLoaded,
-		fromLine,
-		setFromLine,
-		setFromLineIfNeeded,
-	} = useViewStore();
+	const { currSite, currFile, handleNewDataLoaded, fromLine, setFromLine } =
+		useViewStore();
 	const [log, setLog_] = useState<main.Log | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [filterIn, setFilterIn] = useState("");
@@ -91,14 +85,13 @@ export default function LogViewer() {
 		if (!log_) {
 			console.log(`setting log to NULL`);
 			setFromLine(0);
-			setLog(null);
+			setLog_(null);
 			return;
 		}
 
 		if (isLogEq(log_, log)) return;
 
-		console.log(`setting new log (${log_.lines.length} lines) `);
-		setFromLineIfNeeded(log_);
+		setFromLine(calcNewFromLine(log_?.lines));
 		handleNewDataLoaded();
 		setLog_(log_);
 	}
@@ -121,7 +114,7 @@ export default function LogViewer() {
 
 	if (loading) {
 		return (
-			<div className="w-3/4 h-svh overflow-scroll">
+			<div className="w-3/4 md:w-10/12 h-svh overflow-scroll">
 				<Header currSite={currSite} currFile={currFile} />
 				<Loader />
 			</div>
@@ -129,7 +122,7 @@ export default function LogViewer() {
 	}
 
 	return (
-		<div className="w-3/4 h-svh overflow-scroll flex flex-col">
+		<div className="w-3/4 md:w-10/12 h-svh overflow-scroll flex flex-col">
 			<Header
 				currSite={currSite}
 				currFile={currFile}
@@ -207,7 +200,7 @@ function LogLinesView({ full, disp, showMore }: LogLinesViewParams) {
 				<ShowLogLine key={d.key} data={d} showMore={showMore} />
 			))}
 			<div
-				className="absolute text-xs opacity-30 cursor-pointer hover:opacity-100 hover:text-blue-800 hover:underline z-20 top-0 right-0 p-2"
+				className="fixed text-xs opacity-30 cursor-pointer hover:opacity-100 hover:text-blue-800 hover:underline z-20 top-0 right-0 p-2 mt-16"
 				onClick={() => scrollToBottom()}
 			>
 				to bottom↓
@@ -266,7 +259,7 @@ function ShowLogLine({ data, showMore }: ShowLogLineParams) {
 		);
 	}
 
-	if (raw) {
+	if (raw || !data.line.msg) {
 		return (
 			<div
 				ref={(node) => setLineRef(data.key, node)}
@@ -334,7 +327,7 @@ function JSONView({ json, className }: JSONViewProps) {
 			<span
 				onClick={() => setXpand((x) => !x)}
 				className={clsx(
-					"text-xs font-mono whitespace-pre-wrap cursor-pointer",
+					"text-xs font-mono whitespace-pre-wrap cursor-pointer text-green-900",
 					className
 				)}
 			>
@@ -346,11 +339,11 @@ function JSONView({ json, className }: JSONViewProps) {
 			<span
 				onClick={() => setXpand((x) => !x)}
 				className={clsx(
-					"text-xs font-mono whitespace-pre-wrap cursor-pointer",
+					"text-xs font-mono whitespace-pre-wrap cursor-pointer text-green-800 opacity-80 hover:opacity-100",
 					className
 				)}
 			>
-				{JSON5.stringify(json)}
+				{JSON5.stringify(json).replace(/,/g, ", ")}
 			</span>
 		);
 	}
