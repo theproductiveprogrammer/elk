@@ -1,19 +1,17 @@
-# README
+# Elk - The World's Best Log Viewer
 
-## About
+## Quickstart
 
-This is the official Wails React-TS template.
+Add an ftp site that contains all your `*.log` files and your're ready to go!
 
-You can configure the project by editing `wails.json`. More information about the project settings can be found
-here: https://wails.io/docs/reference/project-config
+## Features
 
-## Live Development
-
-To run in live development mode, run `wails dev` in the project directory. This will run a Vite development
-server that will provide very fast hot reload of your frontend changes. If you want to develop in a browser
-and have access to your Go methods, there is also a dev server that runs on http://localhost:34115. Connect
-to this in your browser, and you can call your Go code from devtools.
-
-## Building
-
-To build a redistributable, production mode package, use `wails build`.
+-   Very fast loading
+-   Automatic refresh of open log
+-   Log format autodetection
+-   Log coloring
+-   Filter in/Filter out lines
+-   Highlighting key elements in error stacks
+-   Removing extra large dumps of messages
+-   Double-clicking to get original message
+-   JSON detection and pretty-formatting on clicking
