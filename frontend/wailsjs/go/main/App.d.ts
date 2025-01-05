@@ -22,4 +22,6 @@ export function LogInfo(arg1:string):Promise<void>;
 
 export function LogWarning(arg1:string):Promise<void>;
 
+export function ProcessFile(arg1:string,arg2:Array<number>):Promise<string>;
+
 export function SaveFTPConfig(arg1:main.FTPConfig):Promise<void>;

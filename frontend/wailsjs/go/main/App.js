@@ -42,6 +42,10 @@ export function LogWarning(arg1) {
   return window['go']['main']['App']['LogWarning'](arg1);
 }
 
+export function ProcessFile(arg1, arg2) {
+  return window['go']['main']['App']['ProcessFile'](arg1, arg2);
+}
+
 export function SaveFTPConfig(arg1) {
   return window['go']['main']['App']['SaveFTPConfig'](arg1);
 }
